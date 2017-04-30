@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- make an Introspect query to a specified bus object.
+# This version uses asyncio. Invoke this script as follows:
+#
+#    introspect_asyncio «bus» «bus-name» «obj-path»
+#
+# where «bus» is either “session” or “system”, indicating which bus
+# to do the query on, “bus-name” is the name of the service on the
+# bus to query, and «obj-path» is the path of the object to query.
+# The response should be an XML string in the usual introspection
+# format, indicating the protocol for communicating with the
+# specified object.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+loop = asyncio.get_event_loop()
+
+if len(sys.argv) != 4 :
+    raise getopt.GetoptError("usage: %s session|system «bus-name» «obj-path»" % sys.argv[0])
+#end if
+
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()],
+    private = False
+  )
+conn.attach_asyncio(loop)
+message = dbus.Message.new_method_call \
+  (
+    destination = sys.argv[2],
+    path = sys.argv[3],
+    iface = DBUS.INTERFACE_INTROSPECTABLE,
+    method = "Introspect"
+  )
+await_reply = conn.send_await_reply(message)
+reply = loop.run_until_complete(await_reply)
+if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
+    sys.stdout.write(list(reply.objects)[0])
+elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
+    err = dbus.Error()
+    err.set_from_message(reply)
+    err.raise_if_set()
+else :
+    raise RuntimeError("unexpected reply type %d" % reply.type)
+#end if
