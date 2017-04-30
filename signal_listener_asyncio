@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- listen for signals on D-Bus using the asyncio event loop.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+loop = asyncio.get_event_loop()
+
+#+
+# Callbacks
+#-
+
+def message_filter(connection, message, data) :
+    sys.stderr.write("filter got a message, type %d, serial = %d\n" % (message.type, message.serial))
+    if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
+        sys.stderr.write(" destination = %s\n" % repr(message.destination))
+    #end if
+    if message.type in (DBUS.MESSAGE_TYPE_METHOD_CALL, DBUS.MESSAGE_TYPE_SIGNAL) :
+        sys.stderr.write(" path = %s, interface = %s, name = %s\n" % (repr(message.path), repr(message.interface), repr(message.member)))
+    #end if
+    sys.stderr.write(" contents = %s\n" % repr(list(message.objects)))
+    return \
+        DBUS.HANDLER_RESULT_HANDLED
+#end message_filter
+
+#+
+# Mainline
+#-
+
+if len(sys.argv) != 2 :
+    raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
+#end if
+
+conn = conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()], private = False)
+conn.attach_asyncio(loop)
+conn.add_filter(message_filter, None)
+conn.bus_add_match("type='signal'")
+loop.run_forever()
