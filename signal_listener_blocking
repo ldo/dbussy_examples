@@ -19,14 +19,14 @@ from dbussy import \
 #-
 
 def message_filter(connection, message, data) :
-    sys.stderr.write("filter got a message, type %d, serial = %d\n" % (message.type, message.serial))
+    sys.stdout.write("filter got a message, type %d, serial = %d\n" % (message.type, message.serial))
     if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
-        sys.stderr.write(" destination = %s\n" % repr(message.destination))
+        sys.stdout.write(" destination = %s\n" % repr(message.destination))
     #end if
     if message.type in (DBUS.MESSAGE_TYPE_METHOD_CALL, DBUS.MESSAGE_TYPE_SIGNAL) :
-        sys.stderr.write(" path = %s, interface = %s, name = %s\n" % (repr(message.path), repr(message.interface), repr(message.member)))
+        sys.stdout.write(" path = %s, interface = %s, name = %s\n" % (repr(message.path), repr(message.interface), repr(message.member)))
     #end if
-    sys.stderr.write(" contents = %s\n" % repr(list(message.objects)))
+    sys.stdout.write(" contents = %s\n" % repr(list(message.objects)))
     return \
         DBUS.HANDLER_RESULT_HANDLED
 #end message_filter
