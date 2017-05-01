@@ -5,6 +5,8 @@
 # sends a periodic chime signal on the session bus, and also responds
 # to requests for its idea of the current time.
 #
+# Loosely inspired by this Twitter account <https://twitter.com/big_ben_clock>.
+#
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
