@@ -15,13 +15,16 @@ import dbussy as dbus
 from dbussy import \
     DBUS
 
+my_bus_name = "com.example.bigben"
+my_path_name = "/com/example/bigben"
 my_iface_name = "com.example.bigben"
+chime_signal_name = "chime"
 
 loop = asyncio.get_event_loop()
 
 def handle_message(conn, message, user_data) :
     result = DBUS.HANDLER_RESULT_NOT_YET_HANDLED # to begin with
-    if message.type == DBUS.MESSAGE_TYPE_SIGNAL and message.interface == my_iface_name and message.member == "chime" :
+    if message.type == DBUS.MESSAGE_TYPE_SIGNAL and message.interface == my_iface_name and message.member == chime_signal_name :
         sys.stdout.write(" ".join(message.objects) + "\n")
         result = DBUS.HANDLER_RESULT_HANDLED
     #end if
@@ -38,7 +41,7 @@ conn.attach_asyncio(loop)
 conn.bus_add_match("type='signal'")
 conn.register_fallback \
   (
-    path = "/",
+    path = my_path_name,
     vtable = dbus.ObjectPathVTable
       (
         loop = loop,

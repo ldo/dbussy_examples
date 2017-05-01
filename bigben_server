@@ -20,7 +20,10 @@ import dbussy as dbus
 from dbussy import \
     DBUS
 
+my_bus_name = "com.example.bigben"
+my_path_name = "/com/example/bigben"
 my_iface_name = "com.example.bigben"
+chime_signal_name = "chime"
 
 loop = asyncio.get_event_loop()
 
@@ -42,9 +45,9 @@ async def chimer() :
         else :
             message = dbus.Message.new_signal \
               (
-                path = "/",
+                path = my_path_name,
                 iface = my_iface_name,
-                name = "chime"
+                name = chime_signal_name
               )
             nr_chimes = math.floor(hour)
             if nr_chimes == 0 :
@@ -121,7 +124,7 @@ methods = \
 #-
 
 conn = dbus.Connection.bus_get(DBUS.BUS_SESSION, private = False)
-status = conn.bus_request_name(name = my_iface_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
+status = conn.bus_request_name(name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
 conn.attach_asyncio(loop)
 conn.register_fallback \
   (

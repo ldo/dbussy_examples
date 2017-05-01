@@ -13,6 +13,8 @@ import dbussy as dbus
 from dbussy import \
     DBUS
 
+my_bus_name = "com.example.bigben"
+my_path_name = "/com/example/bigben"
 my_iface_name = "com.example.bigben"
 
 #+
@@ -22,8 +24,8 @@ my_iface_name = "com.example.bigben"
 conn = dbus.Connection.bus_get(DBUS.BUS_SESSION, private = False)
 message = dbus.Message.new_method_call \
   (
-    destination = my_iface_name,
-    path = "/com/example/bigben",
+    destination = my_bus_name,
+    path = my_path_name,
     iface = my_iface_name,
     method = "whats_the_time"
   )
