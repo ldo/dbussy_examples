@@ -1,0 +1,39 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- ask the bigben server for the current “time”.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+my_iface_name = "com.example.bigben"
+
+#+
+# Mainline
+#-
+
+conn = dbus.Connection.bus_get(DBUS.BUS_SESSION, private = False)
+message = dbus.Message.new_method_call \
+  (
+    destination = my_iface_name,
+    path = "/com/example/bigben",
+    iface = my_iface_name,
+    method = "whats_the_time"
+  )
+reply = conn.send_with_reply_and_block(message)
+if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
+    sys.stdout.write(list(reply.objects)[0] + "\n")
+elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
+    err = dbus.Error()
+    reply.set_error(err)
+    err.raise_if_set()
+else :
+    raise RuntimeError("unexpected reply type %d" % reply.type)
+#end if

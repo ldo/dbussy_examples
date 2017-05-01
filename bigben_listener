@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- a listener which reports the chimes from the bigben
+# server every “hour”.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+my_iface_name = "com.example.bigben"
+
+loop = asyncio.get_event_loop()
+
+def handle_message(conn, message, user_data) :
+    result = DBUS.HANDLER_RESULT_NOT_YET_HANDLED # to begin with
+    if message.type == DBUS.MESSAGE_TYPE_SIGNAL and message.interface == my_iface_name and message.member == "chime" :
+        sys.stdout.write(" ".join(message.objects) + "\n")
+        result = DBUS.HANDLER_RESULT_HANDLED
+    #end if
+    return \
+        result
+#end handle_message
+
+#+
+# Mainline
+#-
+
+conn = dbus.Connection.bus_get(DBUS.BUS_SESSION, private = False)
+conn.attach_asyncio(loop)
+conn.bus_add_match("type='signal'")
+conn.register_fallback \
+  (
+    path = "/",
+    vtable = dbus.ObjectPathVTable
+      (
+        loop = loop,
+        message = handle_message,
+      ),
+    user_data = None
+  )
+loop.run_forever()

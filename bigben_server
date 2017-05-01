@@ -1,0 +1,135 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- a server which chimes every “hour”. For demonstration
+# purposes, an “hour” goes by much faster than real time. The server
+# sends a periodic chime signal on the session bus, and also responds
+# to requests for its idea of the current time.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import math
+import time
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+my_iface_name = "com.example.bigben"
+
+loop = asyncio.get_event_loop()
+
+#+
+# Time task
+#-
+
+nr_hours = 12
+seconds_per_hour = 15 # do you dare set this to the right value?
+nr_chimes = 0 # to begin with
+
+async def chimer() :
+    global nr_chimes
+    first = True
+    while True :
+        hour = time.time() % (nr_hours * seconds_per_hour) / seconds_per_hour
+        if first :
+            first = False
+        else :
+            message = dbus.Message.new_signal \
+              (
+                path = "/",
+                iface = my_iface_name,
+                name = "chime"
+              )
+            nr_chimes = math.floor(hour)
+            if nr_chimes == 0 :
+                nr_chimes = nr_hours
+            #end if
+            message.append_objects("s" * nr_chimes, ["BONG!"] * nr_chimes)
+            conn.send(message)
+        #end if
+        delay = (math.ceil(hour) - hour) * seconds_per_hour
+        if not first and delay == 0 :
+            delay = seconds_per_hour
+        #end if
+        await asyncio.sleep(delay)
+    #end while
+#end chimer
+
+def handle_message(conn, message, user_data) :
+    result = DBUS.HANDLER_RESULT_NOT_YET_HANDLED # to begin with
+    if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
+        method_name = message.member
+        if method_name in methods :
+            result = methods[method_name](conn, message, list(message.objects), user_data)
+        #end if
+    #end if
+    return \
+        result
+#end handle_message
+
+#+
+# Interface method handlers
+#-
+
+async def handle_whats_the_time(conn, message, args, user_data) :
+    reply = message.new_method_return()
+    reply.append_objects \
+      (
+        chr(DBUS.TYPE_STRING),
+        [
+            "%s o’clock"
+        %
+            (
+                "?",
+                "one",
+                "two",
+                "three",
+                "four",
+                "five",
+                "six",
+                "seven",
+                "eight",
+                "nine",
+                "ten",
+                "eleven",
+                "twelve",
+            )[nr_chimes]
+        ]
+      )
+    conn.send(reply)
+#end handle_whats_the_time
+
+async def handle_stop(conn, message, args, user_data) :
+    loop.stop()
+    conn.send(message.new_method_return())
+#end handle_stop
+
+methods = \
+    {
+        "whats_the_time" : handle_whats_the_time,
+        "stop" : handle_stop,
+    }
+
+#+
+# Mainline
+#-
+
+conn = dbus.Connection.bus_get(DBUS.BUS_SESSION, private = False)
+status = conn.bus_request_name(name = my_iface_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
+conn.attach_asyncio(loop)
+conn.register_fallback \
+  (
+    path = "/",
+    vtable = dbus.ObjectPathVTable
+      (
+        loop = loop,
+        message = handle_message,
+      ),
+    user_data = None
+  )
+loop.create_task(chimer())
+loop.run_forever()
