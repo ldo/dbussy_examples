@@ -124,3 +124,15 @@ bus.register \
   )
 loop.create_task(chimer())
 loop.run_forever()
+holdname = None
+bus = None
+
+# is there an easier way of cleaning up than this?
+for task in asyncio.Task.all_tasks(loop) :
+    task.cancel()
+    try :
+        loop.run_until_complete(task)
+    except asyncio.CancelledError :
+        pass
+    #end try
+#end for
