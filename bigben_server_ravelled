@@ -1,0 +1,126 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- a server which chimes every “hour”. For demonstration
+# purposes, an “hour” goes by much faster than real time. The server
+# sends a periodic chime signal on the session bus, and also responds
+# to requests for its idea of the current time.
+#
+# This version uses the ravel higher-level API.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import math
+import time
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+my_bus_name = "com.example.bigben"
+my_path_name = "/com/example/bigben"
+my_iface_name = "com.example.bigben"
+chime_signal_name = "chime"
+
+loop = asyncio.get_event_loop()
+
+#+
+# Time task
+#-
+
+nr_hours = 12
+seconds_per_hour = 15 # do you dare set this to the right value?
+nr_chimes = 0 # to begin with
+
+async def chimer() :
+    global nr_chimes
+    first = True
+    while True :
+        hour = time.time() % (nr_hours * seconds_per_hour) / seconds_per_hour
+        if first :
+            first = False
+        else :
+            message = dbus.Message.new_signal \
+              (
+                path = my_path_name,
+                iface = my_iface_name,
+                name = chime_signal_name
+              )
+            nr_chimes = math.floor(hour)
+            if nr_chimes == 0 :
+                nr_chimes = nr_hours
+            #end if
+            message.append_objects("s" * nr_chimes, ["BONG!"] * nr_chimes)
+            bus.connection.send(message)
+        #end if
+        delay = (math.ceil(hour) - hour) * seconds_per_hour
+        if not first and delay == 0 :
+            delay = seconds_per_hour
+        #end if
+        await asyncio.sleep(delay)
+    #end while
+#end chimer
+
+#+
+# Interface
+#-
+
+@ravel.sinterface(name = my_iface_name)
+class BigBen :
+
+    @ravel.smethod(name = "whats_the_time")
+    async def handle_whats_the_time(self, conn, message) :
+        reply = message.new_method_return()
+        reply.append_objects \
+          (
+            chr(DBUS.TYPE_STRING),
+            [
+                "%s o’clock"
+            %
+                (
+                    "?",
+                    "one",
+                    "two",
+                    "three",
+                    "four",
+                    "five",
+                    "six",
+                    "seven",
+                    "eight",
+                    "nine",
+                    "ten",
+                    "eleven",
+                    "twelve",
+                )[nr_chimes]
+            ]
+          )
+        conn.send(reply)
+    #end handle_whats_the_time
+
+    @ravel.smethod(name = "stop")
+    async def handle_stop(self, conn, message) :
+        loop.stop()
+        conn.send(message.new_method_return())
+    #end handle_stop
+
+#end BigBen
+
+#+
+# Mainline
+#-
+
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+holdname = bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
+bus.register \
+  (
+    path = "/",
+    subdir = True,
+    interface = BigBen
+  )
+loop.create_task(chimer())
+loop.run_forever()
