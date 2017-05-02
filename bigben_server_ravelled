@@ -44,18 +44,11 @@ async def chimer() :
         if first :
             first = False
         else :
-            message = dbus.Message.new_signal \
-              (
-                path = my_path_name,
-                iface = my_iface_name,
-                name = chime_signal_name
-              )
             nr_chimes = math.floor(hour)
             if nr_chimes == 0 :
                 nr_chimes = nr_hours
             #end if
-            message.append_objects("s" * nr_chimes, ["BONG!"] * nr_chimes)
-            bus.connection.send(message)
+            chime(my_path_name, *(["BONG!"] * nr_chimes))
         #end if
         delay = (math.ceil(hour) - hour) * seconds_per_hour
         if not first and delay == 0 :
@@ -122,6 +115,7 @@ bus.register \
     subdir = True,
     interface = BigBen
   )
+chime = bus.defsignal(interface = BigBen, name = "chime")
 loop.create_task(chimer())
 loop.run_forever()
 holdname = None
