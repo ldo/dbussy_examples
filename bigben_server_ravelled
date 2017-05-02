@@ -115,7 +115,7 @@ bus.register \
     subdir = True,
     interface = BigBen
   )
-chime = bus.defsignal(interface = BigBen, name = "chime")
+chime = bus.defsignal(interface = my_iface_name, name = "chime")
 loop.create_task(chimer())
 loop.run_forever()
 holdname = None
