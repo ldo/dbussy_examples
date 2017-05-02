@@ -54,7 +54,7 @@ request = dbus.Message.new_method_call \
     method = ("ListNames",  "ListActivatableNames")[activatable]
   )
 reply = conn.send_with_reply_and_block(request)
-for name in list(reply.objects)[0] :
+for name in reply.all_objects[0] :
     if name.startswith(":") == unique :
         sys.stdout.write(name + "\n")
     #end if

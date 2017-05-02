@@ -29,7 +29,7 @@ def message_filter(connection, message, data) :
     if message.type in (DBUS.MESSAGE_TYPE_METHOD_CALL, DBUS.MESSAGE_TYPE_SIGNAL) :
         sys.stdout.write(" path = %s, interface = %s, name = %s\n" % (repr(message.path), repr(message.interface), repr(message.member)))
     #end if
-    sys.stdout.write(" contents = %s\n" % repr(list(message.objects)))
+    sys.stdout.write(" contents = %s\n" % repr(message.all_objects))
     return \
         DBUS.HANDLER_RESULT_HANDLED
 #end message_filter

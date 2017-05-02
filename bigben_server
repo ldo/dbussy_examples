@@ -69,7 +69,7 @@ def handle_message(conn, message, user_data) :
     if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
         method_name = message.member
         if method_name in methods :
-            result = methods[method_name](conn, message, list(message.objects), user_data)
+            result = methods[method_name](conn, message, message.all_objects, user_data)
         #end if
     #end if
     return \
