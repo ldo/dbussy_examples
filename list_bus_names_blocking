@@ -3,7 +3,7 @@
 # DBussy example -- ask the D-Bus daemon for a list of all registered names
 # on a bus. Invoke this script as follows:
 #
-#     list_bus_names [--activatable] [--unique]
+#     list_bus_names_blocking [--activatable] [--unique]
 #
 # where --activatable specifies you want a list of activatable (as opposed
 # to active) names, and --unique means you want the unique names (beginning
