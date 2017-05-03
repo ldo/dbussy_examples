@@ -45,9 +45,7 @@ bus = ravel.session_bus()
 bus.attach_asyncio(loop)
 bus.connection.bus_add_match \
   (
-        "type='%(type)s',interface='%(interface)s',member='%(member)s'"
-    %
-        {"type" : "signal", "interface" : my_iface_name, "member" : chime_signal_name}
+    {"type" : "signal", "interface" : my_iface_name, "member" : chime_signal_name}
   )
 bus.register \
   (
