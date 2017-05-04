@@ -103,6 +103,7 @@ async def show_progress() :
 
 progress_task = loop.create_task(show_progress())
 result = loop.run_until_complete(introspect_path([]))
+result.name = "/"
 progress_task.cancel()
 try :
     loop.run_until_complete(progress_task)
