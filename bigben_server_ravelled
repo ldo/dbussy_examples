@@ -48,7 +48,13 @@ async def chimer() :
             if nr_chimes == 0 :
                 nr_chimes = nr_hours
             #end if
-            chime(my_path_name, *(["BONG!"] * nr_chimes))
+            bus.send_signal \
+              (
+                path = my_path_name,
+                interface = my_iface_name,
+                name = "chime",
+                args = ["BONG!"] * nr_chimes
+              )
         #end if
         delay = (math.ceil(hour) - hour) * seconds_per_hour
         if not first and delay == 0 :
@@ -62,10 +68,10 @@ async def chimer() :
 # Interface
 #-
 
-@ravel.sinterface(name = my_iface_name)
+@ravel.interface(ravel.INTERFACE.SERVER, name = my_iface_name)
 class BigBen :
 
-    @ravel.smethod(name = "whats_the_time")
+    @ravel.method(name = "whats_the_time", connection_keyword = "conn", message_keyword = "message")
     async def handle_whats_the_time(self, conn, message) :
         reply = message.new_method_return()
         reply.append_objects \
@@ -94,8 +100,11 @@ class BigBen :
         conn.send(reply)
     #end handle_whats_the_time
 
-    @ravel.smethod(name = "stop")
-    async def handle_stop(self, conn, message) :
+    @ravel.signal(name = "chime")
+    def chime_dummy(self) : pass
+
+    @ravel.method(name = "stop", connection_keyword = "conn", message_keyword = "message")
+    def handle_stop(self, conn, message) :
         loop.stop()
         conn.send(message.new_method_return())
     #end handle_stop
@@ -115,7 +124,6 @@ bus.register \
     subdir = True,
     interface = BigBen
   )
-chime = bus.defsignal(interface = my_iface_name, name = "chime")
 loop.create_task(chimer())
 loop.run_forever()
 holdname = None

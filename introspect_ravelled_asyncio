@@ -35,10 +35,8 @@ if len(sys.argv) != 4 :
 
 bus = {"session" : ravel.session_bus, "system" : ravel.system_bus}[sys.argv[1].lower()]()
 bus.attach_asyncio(loop)
-await_reply = ravel.CAsyncInterface \
-  (
-    object = bus.get_object(sys.argv[2], sys.argv[3]),
-    name = DBUS.INTERFACE_INTROSPECTABLE
-  ).Introspect()
+await_reply = bus.get_object(sys.argv[2], sys.argv[3]) \
+    .get_async_interface(DBUS.INTERFACE_INTROSPECTABLE) \
+    .Introspect()
 reply = loop.run_until_complete(await_reply)
 sys.stdout.write(reply)
