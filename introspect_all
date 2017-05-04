@@ -1,0 +1,108 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- make recursive Introspect queries to all possible
+# paths at a specified bus name. This version uses asyncio. Invoke
+# this script as follows:
+#
+#    introspect_all «bus» «bus-name»
+#
+# where «bus» is either “session” or “system”, indicating which bus to
+# do the query on, and “bus-name” is the name of the service on the
+# bus to query. The response is an XML string in the usual
+# introspection format, indicating the protocol for communicating with
+# the entire object tree.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+loop = asyncio.get_event_loop()
+
+if len(sys.argv) != 3 :
+    raise getopt.GetoptError("usage: %s session|system «bus-name»" % sys.argv[0])
+#end if
+
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()],
+    private = False
+  )
+destination = sys.argv[2]
+conn.attach_asyncio(loop)
+
+interfaces_seen = set()
+current_path = None
+
+async def introspect_path(path) :
+    "introspects the specified path."
+    global current_path
+    current_path = dbus.unsplit_path(path)
+    request = dbus.Message.new_method_call \
+      (
+        destination = destination,
+        path = dbus.unsplit_path(path),
+        iface = DBUS.INTERFACE_INTROSPECTABLE,
+        method = "Introspect"
+      )
+    reply = await conn.send_await_reply(request)
+    if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
+        result = dbus.Introspection.parse(reply.all_objects[0])
+        nodes = list(result.nodes)
+        for i, node in enumerate(nodes) :
+            assert isinstance(node, dbus.Introspection.Node)
+            expanded = await introspect_path(path + [node.name])
+            expanded.name = node.name
+            interfaces = list(expanded.interfaces)
+            for j, interface in enumerate(interfaces) :
+                if interface.name in interfaces_seen :
+                    interface = dbus.Introspection.StubInterface(name = interface.name)
+                else :
+                    interfaces_seen.add(interface.name)
+                #end if
+                interfaces[j] = interface
+            #end for
+            expanded.interfaces = tuple(interfaces)
+            nodes[i] = expanded
+        #end for
+        result.nodes = tuple(nodes)
+    elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
+        err = dbus.Error()
+        err.set_from_message(reply)
+        err.raise_if_set()
+    else :
+        raise RuntimeError("unexpected reply type %d" % reply.type)
+    #end if
+    return \
+        result
+#end introspect_path
+
+async def show_progress() :
+    "keeps the user apprised of current progress."
+    try :
+        while True :
+            await asyncio.sleep(1 / 4)
+            sys.stderr.write("doing: %s\n" % current_path)
+        #end while
+    except asyncio.CancelledError :
+        sys.stderr.write("done.\n")
+    #end try
+#end def show_progress
+
+progress_task = loop.create_task(show_progress())
+result = loop.run_until_complete(introspect_path([]))
+progress_task.cancel()
+try :
+    loop.run_until_complete(progress_task)
+except asyncio.CancelledError :
+    pass
+#end try
+sys.stdout.write(result.unparse())
