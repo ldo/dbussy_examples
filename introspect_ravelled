@@ -4,7 +4,7 @@
 # This version uses the high-level Ravel API with asyncio.
 # Invoke this script as follows:
 #
-#    introspect_ravelled_asyncio «bus» «bus-name» «obj-path»
+#    introspect_ravelled «bus» «bus-name» «obj-path»
 #
 # where «bus» is either “session” or “system”, indicating which bus
 # to do the query on, “bus-name” is the name of the service on the
