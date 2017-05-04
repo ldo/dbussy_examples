@@ -87,13 +87,17 @@ async def introspect_path(path) :
 
 async def show_progress() :
     "keeps the user apprised of current progress."
+    did_progress = False
     try :
         while True :
             await asyncio.sleep(1 / 4)
             sys.stderr.write("doing: %s\n" % current_path)
+            did_progress = True
         #end while
     except asyncio.CancelledError :
-        sys.stderr.write("done.\n")
+        if did_progress :
+            sys.stderr.write("done.\n")
+        #end if
     #end try
 #end def show_progress
 
