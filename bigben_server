@@ -53,7 +53,7 @@ async def chimer() :
             if nr_chimes == 0 :
                 nr_chimes = nr_hours
             #end if
-            message.append_objects("s" * nr_chimes, ["BONG!"] * nr_chimes)
+            message.append_objects("as", ["BONG!"] * nr_chimes)
             conn.send(message)
         #end if
         delay = (math.ceil(hour) - hour) * seconds_per_hour
@@ -85,7 +85,6 @@ async def handle_whats_the_time(conn, message, args, user_data) :
     reply.append_objects \
       (
         chr(DBUS.TYPE_STRING),
-        [
             "%s o’clock"
         %
             (
@@ -103,7 +102,6 @@ async def handle_whats_the_time(conn, message, args, user_data) :
                 "eleven",
                 "twelve",
             )[nr_chimes]
-        ]
       )
     conn.send(reply)
 #end handle_whats_the_time

@@ -28,9 +28,9 @@ loop = asyncio.get_event_loop()
 @ravel.interface(ravel.INTERFACE.CLIENT, name = my_iface_name)
 class BigBen :
 
-    @ravel.signal(name = "chime")
+    @ravel.signal(name = "chime", signature = "as")
     def chime_received(self, *args) :
-        sys.stdout.write(" ".join(args) + "\n")
+        sys.stdout.write(" ".join(args[0]) + "\n")
     #end chime_received
 
 #end BigBen

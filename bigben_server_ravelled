@@ -77,7 +77,6 @@ class BigBen :
         reply.append_objects \
           (
             chr(DBUS.TYPE_STRING),
-            [
                 "%s o’clock"
             %
                 (
@@ -95,12 +94,11 @@ class BigBen :
                     "eleven",
                     "twelve",
                 )[nr_chimes]
-            ]
           )
         conn.send(reply)
     #end handle_whats_the_time
 
-    @ravel.signal(name = "chime")
+    @ravel.signal(name = "chime", signature = "as")
     def chime_dummy(self) : pass
 
     @ravel.method(name = "stop", connection_keyword = "conn", message_keyword = "message")
