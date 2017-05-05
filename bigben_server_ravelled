@@ -98,7 +98,7 @@ class BigBen :
         conn.send(reply)
     #end handle_whats_the_time
 
-    @ravel.signal(name = "chime", signature = "as")
+    @ravel.signal(name = "chime", in_signature = "as")
     def chime_dummy(self) : pass
 
     @ravel.method(name = "stop", connection_keyword = "conn", message_keyword = "message")
