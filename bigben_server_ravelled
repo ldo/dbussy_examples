@@ -71,12 +71,14 @@ async def chimer() :
 @ravel.interface(ravel.INTERFACE.SERVER, name = my_iface_name)
 class BigBen :
 
-    @ravel.method(name = "whats_the_time", connection_keyword = "conn", message_keyword = "message")
-    async def handle_whats_the_time(self, conn, message) :
-        reply = message.new_method_return()
-        reply.append_objects \
+    @ravel.method \
+      (
+        name = "whats_the_time",
+        out_signature = "s"
+      )
+    async def handle_whats_the_time(self) :
+        return \
           (
-            chr(DBUS.TYPE_STRING),
                 "%s o’clock"
             %
                 (
@@ -95,7 +97,6 @@ class BigBen :
                     "twelve",
                 )[nr_chimes]
           )
-        conn.send(reply)
     #end handle_whats_the_time
 
     @ravel.signal(name = "chime", in_signature = "as")
