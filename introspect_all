@@ -19,6 +19,7 @@
 #-
 
 import sys
+import os
 import asyncio
 import getopt
 import dbussy as dbus
@@ -88,26 +89,38 @@ async def introspect_path(path) :
 async def show_progress() :
     "keeps the user apprised of current progress."
     did_progress = False
+    esc = chr(27)
+    max_line_width = 80 # assumption!
+    clear_line = esc + "[2K"
+    cursor_left = esc + "[%dD" % max_line_width
+    prefix = "doing: "
     try :
         while True :
             await asyncio.sleep(1 / 4)
-            sys.stderr.write("doing: %s\n" % current_path)
+            sys.stderr.write("%s%s%s%s" % (clear_line, prefix, current_path[:max_line_width - len(prefix)], cursor_left))
+            sys.stderr.flush()
             did_progress = True
         #end while
     except asyncio.CancelledError :
         if did_progress :
-            sys.stderr.write("done.\n")
+            sys.stderr.write("%sdone.\n" % clear_line)
         #end if
     #end try
 #end def show_progress
 
-progress_task = loop.create_task(show_progress())
+if os.isatty(sys.stderr.fileno()) :
+    progress_task = loop.create_task(show_progress())
+else :
+    progress_task = None
+#end if
 result = loop.run_until_complete(introspect_path([]))
 result.name = "/"
-progress_task.cancel()
-try :
-    loop.run_until_complete(progress_task)
-except asyncio.CancelledError :
-    pass
-#end try
+if progress_task != None :
+    progress_task.cancel()
+    try :
+        loop.run_until_complete(progress_task)
+    except asyncio.CancelledError :
+        pass
+    #end try
+#end if
 sys.stdout.write(result.unparse())
