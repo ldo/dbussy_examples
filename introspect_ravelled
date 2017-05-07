@@ -39,4 +39,4 @@ await_reply = bus.get_object(sys.argv[2], sys.argv[3]) \
     .get_async_interface(DBUS.INTERFACE_INTROSPECTABLE) \
     .Introspect()
 reply = loop.run_until_complete(await_reply)
-sys.stdout.write(reply)
+sys.stdout.write(reply[0])
