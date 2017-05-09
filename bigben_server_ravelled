@@ -79,6 +79,7 @@ class BigBen :
     async def handle_whats_the_time(self) :
         return \
           (
+            [
                 "%s o’clock"
             %
                 (
@@ -96,6 +97,7 @@ class BigBen :
                     "eleven",
                     "twelve",
                 )[nr_chimes]
+            ]
           )
     #end handle_whats_the_time
 
