@@ -48,7 +48,7 @@ bus.connection.bus_add_match \
 bus.register \
   (
     path = "/",
-    subdir = True,
+    fallback = True,
     interface = BigBen
   )
 loop.run_forever()

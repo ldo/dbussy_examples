@@ -120,7 +120,7 @@ holdname = bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NO
 bus.register \
   (
     path = "/",
-    subdir = True,
+    fallback = True,
     interface = BigBen
   )
 loop.create_task(chimer())
