@@ -41,13 +41,11 @@ async def chimer() :
     first = True
     while True :
         hour = time.time() % (nr_hours * seconds_per_hour) / seconds_per_hour
-        if first :
-            first = False
-        else :
-            nr_chimes = math.floor(hour)
-            if nr_chimes == 0 :
-                nr_chimes = nr_hours
-            #end if
+        nr_chimes = math.floor(hour)
+        if nr_chimes == 0 :
+            nr_chimes = nr_hours
+        #end if
+        if not first :
             bus.send_signal \
               (
                 path = my_path_name,
@@ -60,6 +58,7 @@ async def chimer() :
         if not first and delay == 0 :
             delay = seconds_per_hour
         #end if
+        first = False
         await asyncio.sleep(delay)
     #end while
 #end chimer
