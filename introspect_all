@@ -20,11 +20,47 @@
 
 import sys
 import os
+import ctypes as ct
+import fcntl
+import termios
 import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
     DBUS
+
+#+
+# Useful stuff
+#-
+
+def get_terminal_window_size() :
+    "returns (cols, rows) for the terminal if this can be determined, else (None, None)."
+
+    class winsize(ct.Structure) :
+        _fields_ = \
+            [
+                ("ws_row", ct.c_ushort),
+                ("ws_col", ct.c_ushort),
+                ("ws_ypixel", ct.c_ushort), # unused
+                ("ws_xpixel", ct.c_ushort), # unused
+            ]
+    #end winsize
+
+#begin get_terminal_window_size
+    result = (None, None) # to begin with
+    tty_fileno = 2 # sys.stderr.fileno()
+    if os.isatty(tty_fileno) :
+        size_buf = winsize()
+        fcntl.ioctl(tty_fileno, termios.TIOCGWINSZ, size_buf)
+        result = (size_buf.ws_col, size_buf.ws_row)
+    #end if
+    return \
+        result
+#end get_terminal_window_size
+
+#+
+# Mainline
+#-
 
 loop = asyncio.get_event_loop()
 
@@ -95,14 +131,13 @@ async def show_progress() :
     "keeps the user apprised of current progress."
     did_progress = False
     esc = chr(27)
-    max_line_width = 80 # assumption!
     clear_line = esc + "[2K"
-    cursor_left = esc + "[%dD" % max_line_width
+    cursor_left = esc + "[%dD" % line_length
     prefix = "doing: "
     try :
         while True :
             await asyncio.sleep(1 / 4)
-            sys.stderr.write("%s%s%s%s" % (clear_line, prefix, current_path[:max_line_width - len(prefix)], cursor_left))
+            sys.stderr.write("%s%s%s%s" % (clear_line, prefix, current_path[:line_length - len(prefix)], cursor_left))
             sys.stderr.flush()
             did_progress = True
         #end while
@@ -113,7 +148,8 @@ async def show_progress() :
     #end try
 #end def show_progress
 
-if os.isatty(sys.stderr.fileno()) :
+line_length = get_terminal_window_size()[0]
+if line_length != None :
     progress_task = loop.create_task(show_progress())
 else :
     progress_task = None
