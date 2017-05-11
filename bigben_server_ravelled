@@ -130,6 +130,12 @@ bus.register \
   (
     path = "/",
     fallback = True,
+    interface = ravel.IntrospectionHandler
+  )
+bus.register \
+  (
+    path = "/",
+    fallback = True,
     interface = BigBen
   )
 loop.create_task(chimer())
