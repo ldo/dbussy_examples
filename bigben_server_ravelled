@@ -51,7 +51,7 @@ async def chimer() :
                 path = my_path_name,
                 interface = my_iface_name,
                 name = "chime",
-                args = ["BONG!"] * nr_chimes
+                args = [["BONG!"] * nr_chimes]
               )
         #end if
         delay = (math.ceil(hour) - hour) * seconds_per_hour
