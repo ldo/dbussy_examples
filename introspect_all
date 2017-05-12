@@ -77,12 +77,14 @@ destination = sys.argv[2]
 conn.attach_asyncio(loop)
 
 interfaces_seen = set()
+nr_objects = 0
 current_path = None
 
 async def introspect_path(path) :
     "introspects the specified path."
-    global current_path
+    global current_path, nr_objects
     current_path = dbus.unsplit_path(path)
+    nr_objects += 1
     request = dbus.Message.new_method_call \
       (
         destination = destination,
@@ -137,13 +139,15 @@ async def show_progress() :
     try :
         while True :
             await asyncio.sleep(1 / 4)
-            sys.stderr.write("%s%s%s%s" % (clear_line, prefix, current_path[:line_length - len(prefix)], cursor_left))
+            msg = "%d: %s%s" % (nr_objects, prefix, current_path)
+            msg = msg[:line_length]
+            sys.stderr.write("%s%s%s" % (clear_line, msg, cursor_left))
             sys.stderr.flush()
             did_progress = True
         #end while
     except asyncio.CancelledError :
         if did_progress :
-            sys.stderr.write("%sdone.\n" % clear_line)
+            sys.stderr.write("%s%d done.\n" % (clear_line, nr_objects))
         #end if
     #end try
 #end def show_progress
