@@ -134,14 +134,17 @@ conn.register_fallback \
     user_data = None
   )
 loop.create_task(chimer())
-loop.run_forever()
-
-# is there an easier way of cleaning up than this?
-for task in asyncio.Task.all_tasks(loop) :
-    task.cancel()
-    try :
-        loop.run_until_complete(task)
-    except asyncio.CancelledError :
-        pass
-    #end try
-#end for
+try :
+    loop.run_forever()
+except KeyboardInterrupt :
+    # is there an easier way of cleaning up than this?
+    for task in asyncio.Task.all_tasks(loop) :
+        task.cancel()
+        try :
+            loop.run_until_complete(task)
+        except asyncio.CancelledError :
+            pass
+        #end try
+    #end for
+    print() # avoid terminal prompt appearing after ^C
+#end try
