@@ -3,12 +3,12 @@
 # DBussy example -- ask the D-Bus daemon for a list of all registered names
 # on a bus. Invoke this script as follows:
 #
-#     list_bus_names_blocking [--activatable] [--unique]
+#     list_bus_names_blocking [--activatable] [--owners] [--unique]
 #
 # where --activatable specifies you want a list of activatable (as opposed
-# to active) names, and --unique means you want the unique names (beginning
-# with a colon and assigned by the D-Bus daemon) as opposed to the requested
-# names.
+# to active) names, --owners shows the unique bus names owning the names,
+# and --unique means you want the unique names (beginning with a colon
+# and assigned by the D-Bus daemon) as opposed to the requested names.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
@@ -23,16 +23,19 @@ from dbussy import \
     DBUS
 
 activatable = False
+show_owners = False
 unique = False
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["activatable", "unique"]
+    ["activatable", "owners", "unique"]
   )
 for keyword, value in opts :
     if keyword == "--activatable" :
         activatable = True
+    elif keyword == "--owners" :
+        show_owners = True
     elif keyword == "--unique" :
         unique = True
     #end if
@@ -54,8 +57,22 @@ request = dbus.Message.new_method_call \
     method = ("ListNames",  "ListActivatableNames")[activatable]
   )
 reply = conn.send_with_reply_and_block(request)
-for name in reply.all_objects[0] :
+for name in sorted(reply.all_objects[0]) :
     if name.startswith(":") == unique :
-        sys.stdout.write(name + "\n")
+        if show_owners :
+            request = dbus.Message.new_method_call \
+              (
+                destination = DBUS.SERVICE_DBUS,
+                path = DBUS.PATH_DBUS,
+                iface = DBUS.INTERFACE_DBUS,
+                method = "GetNameOwner"
+              )
+            request.append_objects("s", name)
+            reply = conn.send_with_reply_and_block(request)
+            owner = reply.all_objects[0]
+            sys.stdout.write("%s -> %s\n" % (name, owner))
+        else :
+            sys.stdout.write(name + "\n")
+        #end if
     #end if
 #end for
