@@ -49,26 +49,30 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[args[0].lower()],
     private = False
   )
-request = dbus.Message.new_method_call \
+reply = conn.send_with_reply_and_block \
   (
-    destination = DBUS.SERVICE_DBUS,
-    path = DBUS.PATH_DBUS,
-    iface = DBUS.INTERFACE_DBUS,
-    method = ("ListNames",  "ListActivatableNames")[activatable]
+    dbus.Message.new_method_call
+      (
+        destination = DBUS.SERVICE_DBUS,
+        path = DBUS.PATH_DBUS,
+        iface = DBUS.INTERFACE_DBUS,
+        method = ("ListNames",  "ListActivatableNames")[activatable]
+      )
   )
-reply = conn.send_with_reply_and_block(request)
 for name in sorted(reply.all_objects[0]) :
     if name.startswith(":") == unique :
         if show_owners :
-            request = dbus.Message.new_method_call \
+            reply = conn.send_with_reply_and_block \
               (
-                destination = DBUS.SERVICE_DBUS,
-                path = DBUS.PATH_DBUS,
-                iface = DBUS.INTERFACE_DBUS,
-                method = "GetNameOwner"
+                dbus.Message.new_method_call
+                  (
+                    destination = DBUS.SERVICE_DBUS,
+                    path = DBUS.PATH_DBUS,
+                    iface = DBUS.INTERFACE_DBUS,
+                    method = "GetNameOwner"
+                  )
+                    .append_objects("s", name)
               )
-            request.append_objects("s", name)
-            reply = conn.send_with_reply_and_block(request)
             owner = reply.all_objects[0]
             sys.stdout.write("%s -> %s\n" % (name, owner))
         else :
