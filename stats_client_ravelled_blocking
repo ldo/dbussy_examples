@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+#+
+# DBussy/Ravel example -- demo client for communicating with the stats_server.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import random
+import ravel
+
+stats_bus_name = "com.example.stats"
+stats_path_name = "/com/example/stats"
+stats_iface_name = "com.example.stats"
+
+nr_nums = random.randint(10, 20)
+nums = list(random.random() for i in range(nr_nums))
+
+server = ravel.session_bus() \
+    .get_object(stats_bus_name, stats_path_name) \
+    .get_interface(stats_iface_name)
+
+sys.stdout.write("nums = %s\n" % repr(nums))
+results = {}
+for key, val in zip(["mean", "stdev", "pstdev"], server.mean_and_deviation(nums)) :
+    results[key] = val
+#end for
+try :
+    results["harmonic_mean"] = server.harmonic_mean(nums)[0]
+except ravel.dbus.DBusError as err :
+    if err.name != ravel.DBUS.ERROR_UNKNOWN_METHOD :
+        raise
+    #end if
+    sys.stdout.write("harmonic_mean not available\n")
+#end try
+for key, val in zip(["median", "max", "min"], server.hi_lo(nums)) :
+    results[key] = val
+#end for
+for key in sorted(results) :
+    sys.stdout.write("%s = %.3g\n" % (key, results[key]))
+#end for
+choice = server.pick_one("i_win", "you_lose")
+sys.stdout.write("pick_one choice = %s\n" % choice)

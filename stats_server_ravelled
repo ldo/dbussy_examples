@@ -1,0 +1,159 @@
+#!/usr/bin/python3
+#+
+# DBussy/Ravel example -- a server which performs various useless
+# statistical calculations on numbers which are passed to it. The
+# interface class defined here shows different ways of getting arguments
+# out of the request message and returning results.
+#
+# Try the accompanying stats_client_xxx script after starting this
+# running and observe the results.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import random
+import statistics
+import asyncio
+import ravel
+
+stats_bus_name = "com.example.stats"
+stats_path_name = "/com/example/stats"
+stats_iface_name = "com.example.stats"
+
+loop = asyncio.get_event_loop()
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+
+#+
+# Interface
+#-
+
+@ravel.interface(ravel.INTERFACE.SERVER, name = stats_iface_name)
+class Stats :
+
+    @ravel.method \
+      (
+        name = "mean_and_deviation",
+        in_signature = "ad",
+        out_signature = "ddd",
+        arg_keys = ["numbers"],
+        result_keyword = "results",
+        result_attrs = ["mean", "stdev", "pstdev"],
+      )
+    def mean_and_deviation(self, numbers, results) :
+        results.mean = statistics.mean(numbers)
+        results.stdev = statistics.stdev(numbers)
+        results.pstdev = statistics.pstdev(numbers)
+    #end mean_and_deviation
+
+    if hasattr(statistics, "harmonic_mean") :
+        # Python 3.6 or later
+
+        @ravel.method \
+          (
+            name = "harmonic_mean",
+            in_signature = "ad",
+            args_keyword = "args",
+            out_signature = "d",
+            set_result_keyword = "set_result",
+          )
+        def harmonic_mean(self, args, set_result) :
+            numbers = args[0]
+            result = statistics.harmonic_mean(numbers)
+            set_result([result])
+        #end harmonic_mean
+
+    #end if
+
+    @ravel.method \
+      (
+        name = "hi_lo",
+        in_signature = "ad",
+        out_signature = "ddd",
+        result_keys = ["median", "max", "min"],
+      )
+    def hi_lo(self, numbers) :
+        return \
+            {
+                "median" : statistics.median(numbers),
+                "max" : max(numbers),
+                "min" : min(numbers),
+            }
+    #end hi_lo
+
+    @ravel.method \
+      (
+        name = "pick_one",
+        in_signature = "ss",
+        out_signature = "s",
+        arg_keys = ["heads", "tails"],
+        result_keyword = "result",
+      )
+    def pick_one(self, heads, tails, result) :
+        result[0] = (heads, tails)[random.randrange(2)]
+    #end pick_one
+
+    @ravel.signal \
+      (
+        name = "something_happened",
+        in_signature = "s",
+        arg_keys = ["msg"],
+      )
+    def something_happened(self, msg) : pass
+
+    @ravel.method \
+      (
+        name = "dont_call_me",
+        in_signature = "",
+        out_signature = "",
+        reply = False,
+        deprecated = True
+      )
+    def dont_call_me(self) :
+        bus.send_signal \
+          (
+            path = stats_path_name,
+            interface = stats_iface_name,
+            name = "something_happened",
+            args = ["deprecated method “dont_call_me” called"]
+          )
+    #end dont_call_me
+
+#end Stats
+
+#+
+# Mainline
+#-
+
+holdname = bus.request_name(bus_name = stats_bus_name, flags = ravel.DBUS.NAME_FLAG_DO_NOT_QUEUE)
+bus.register \
+  (
+    path = "/",
+    fallback = True,
+    interface = ravel.IntrospectionHandler
+  )
+bus.register \
+  (
+    path = "/",
+    fallback = True,
+    interface = Stats
+  )
+try :
+    loop.run_forever()
+except KeyboardInterrupt :
+    # is there an easier way of cleaning up than this?
+    for task in asyncio.Task.all_tasks(loop) :
+        task.cancel()
+        try :
+            loop.run_until_complete(task)
+        except asyncio.CancelledError :
+            pass
+        #end try
+    #end for
+    print() # avoid terminal prompt appearing after ^C
+#end try
+holdname = None
+bus = None
