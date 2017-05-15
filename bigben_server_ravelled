@@ -130,8 +130,6 @@ bus.register \
   (
     path = "/",
     fallback = True,
-    interface = ravel.IntrospectionHandler
-  )
 bus.register \
   (
     path = "/",
