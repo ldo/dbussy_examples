@@ -133,7 +133,7 @@ bus.register \
   (
     path = "/",
     fallback = True,
-    interface = Stats
+    interface = Stats()
   )
 try :
     loop.run_forever()

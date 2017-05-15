@@ -49,6 +49,6 @@ bus.register \
   (
     path = "/",
     fallback = True,
-    interface = BigBen
+    interface = BigBen()
   )
 loop.run_forever()

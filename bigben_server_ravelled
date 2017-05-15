@@ -130,11 +130,7 @@ bus.register \
   (
     path = "/",
     fallback = True,
-bus.register \
-  (
-    path = "/",
-    fallback = True,
-    interface = BigBen
+    interface = BigBen()
   )
 loop.create_task(chimer())
 try :
