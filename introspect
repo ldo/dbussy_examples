@@ -47,7 +47,7 @@ message = dbus.Message.new_method_call \
 await_reply = conn.send_await_reply(message)
 reply = loop.run_until_complete(await_reply)
 if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
-    sys.stdout.write(reply.all_objects[0])
+    sys.stdout.write(reply.expect_objects("s")[0])
 elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
     err = dbus.Error()
     err.set_from_message(reply)

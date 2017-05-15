@@ -59,7 +59,7 @@ reply = conn.send_with_reply_and_block \
         method = ("ListNames",  "ListActivatableNames")[activatable]
       )
   )
-for name in sorted(reply.all_objects[0]) :
+for name in sorted(reply.expect_objects("as")[0]) :
     if name.startswith(":") == unique :
         if show_owners :
             reply = conn.send_with_reply_and_block \

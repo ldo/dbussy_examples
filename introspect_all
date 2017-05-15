@@ -94,7 +94,7 @@ async def introspect_path(path) :
       )
     reply = await conn.send_await_reply(request)
     if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
-        result = dbus.Introspection.parse(reply.all_objects[0])
+        result = dbus.Introspection.parse(reply.expect_objects("s")[0])
         interfaces = list(result.interfaces)
         for j, interface in enumerate(interfaces) :
             if interface.name in interfaces_seen :

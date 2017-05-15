@@ -31,7 +31,7 @@ message = dbus.Message.new_method_call \
   )
 reply = conn.send_with_reply_and_block(message)
 if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
-    sys.stdout.write(reply.all_objects[0] + "\n")
+    sys.stdout.write(reply.expect_objects("s")[0] + "\n")
 elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
     err = dbus.Error()
     reply.set_error(err)
