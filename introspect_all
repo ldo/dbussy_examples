@@ -105,11 +105,11 @@ async def introspect_path(path) :
             interfaces[j] = interface
         #end for
         result.interfaces = tuple(interfaces)
-        nodes = list(result.nodes)
-        for i, node in enumerate(nodes) :
+        for i in range(len(result.nodes)) :
+            node = result.nodes[i]
             assert isinstance(node, dbus.Introspection.Node)
             expanded = await introspect_path(path + [node.name])
-            nodes[i] = dbus.Introspection.Node \
+            result.nodes[i] = dbus.Introspection.Node \
               (
                 name = node.name,
                 interfaces = expanded.interfaces,
@@ -117,7 +117,6 @@ async def introspect_path(path) :
                 annotations = expanded.annotations
               )
         #end for
-        result.nodes = tuple(nodes)
     elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
         err = dbus.Error()
         err.set_from_message(reply)
