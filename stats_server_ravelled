@@ -44,9 +44,13 @@ class Stats :
         result_attrs = ["mean", "stdev", "pstdev"],
       )
     def mean_and_deviation(self, numbers, results) :
-        results.mean = statistics.mean(numbers)
-        results.stdev = statistics.stdev(numbers)
-        results.pstdev = statistics.pstdev(numbers)
+        try :
+            results.mean = statistics.mean(numbers)
+            results.stdev = statistics.stdev(numbers)
+            results.pstdev = statistics.pstdev(numbers)
+        except statistics.StatisticsError as err :
+            raise ravel.HandlerError(ravel.DBUS.ERROR_INVALID_ARGS, "StatisticsError: %s" % err.args[0])
+        #end try
     #end mean_and_deviation
 
     if hasattr(statistics, "harmonic_mean") :
