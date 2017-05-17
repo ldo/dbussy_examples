@@ -25,15 +25,10 @@ chime_signal_name = "chime"
 
 loop = asyncio.get_event_loop()
 
-@ravel.interface(ravel.INTERFACE.CLIENT, name = my_iface_name)
-class BigBen :
-
-    @ravel.signal(name = "chime", in_signature = "as")
-    def chime_received(self, *args) :
-        sys.stdout.write(" ".join(args[0]) + "\n")
-    #end chime_received
-
-#end BigBen
+@ravel.signal(name = "chime", in_signature = "as", args_keyword = "args")
+def chime_received(args) :
+    sys.stdout.write(" ".join(args[0]) + "\n")
+#end chime_received
 
 #+
 # Mainline
@@ -41,14 +36,12 @@ class BigBen :
 
 bus = ravel.session_bus()
 bus.attach_asyncio(loop)
-bus.connection.bus_add_match \
-  (
-    {"type" : "signal", "interface" : my_iface_name, "member" : chime_signal_name}
-  )
-bus.register \
+bus.register_signal \
   (
     path = "/",
     fallback = True,
-    interface = BigBen()
+    interface = my_iface_name,
+    name = chime_signal_name,
+    func = chime_received
   )
 loop.run_forever()
