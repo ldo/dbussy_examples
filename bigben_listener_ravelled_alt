@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- a listener which reports the chimes from the bigben
+# server every “hour”.
+#
+# This version uses the ravel higher-level API.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+my_bus_name = "com.example.bigben"
+my_path_name = "/com/example/bigben"
+my_iface_name = "com.example.bigben"
+chime_signal_name = "chime"
+
+loop = asyncio.get_event_loop()
+
+@ravel.interface(ravel.INTERFACE.CLIENT, name = my_iface_name)
+class BigBen :
+
+    @ravel.signal(name = "chime", in_signature = "as")
+    def chime_received(self, *args) :
+        sys.stdout.write(" ".join(args[0]) + "\n")
+    #end chime_received
+
+#end BigBen
+
+#+
+# Mainline
+#-
+
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+bus.connection.bus_add_match \
+  (
+    {"type" : "signal", "interface" : my_iface_name, "member" : chime_signal_name}
+  )
+bus.register \
+  (
+    path = "/",
+    fallback = True,
+    interface = BigBen()
+  )
+loop.run_forever()
