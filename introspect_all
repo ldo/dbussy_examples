@@ -95,16 +95,14 @@ async def introspect_path(path) :
     reply = await conn.send_await_reply(request)
     if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
         result = dbus.Introspection.parse(reply.expect_objects("s")[0])
-        interfaces = list(result.interfaces)
-        for j, interface in enumerate(interfaces) :
+        for i in range(len(result.interfaces)) :
+            interface = result.interfaces[i]
             if interface.name in interfaces_seen :
-                interface = dbus.Introspection.StubInterface(name = interface.name)
+                result.interfaces[i] = dbus.Introspection.StubInterface(name = interface.name)
             else :
                 interfaces_seen.add(interface.name)
             #end if
-            interfaces[j] = interface
         #end for
-        result.interfaces = tuple(interfaces)
         for i in range(len(result.nodes)) :
             node = result.nodes[i]
             assert isinstance(node, dbus.Introspection.Node)
