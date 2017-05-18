@@ -1,0 +1,93 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- ask the D-Bus daemon for a list of all registered
+# names on a bus. This version uses an event loop and a proxy
+# interface class generated from an Introspection with
+# ravel.def_proxy_interface. Invoke this script as follows:
+#
+#     list_bus_names [--activatable] [--owners] [--unique]
+#
+# where --activatable specifies you want a list of activatable (as opposed
+# to active) names, --owners shows the unique bus names owning the names,
+# and --unique means you want the unique names (beginning with a colon
+# and assigned by the D-Bus daemon) as opposed to the requested names.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+loop = asyncio.get_event_loop()
+
+activatable = False
+show_owners = False
+unique = False
+opts, args = getopt.getopt \
+  (
+    sys.argv[1:],
+    "",
+    ["activatable", "owners", "unique"]
+  )
+for keyword, value in opts :
+    if keyword == "--activatable" :
+        activatable = True
+    elif keyword == "--owners" :
+        show_owners = True
+    elif keyword == "--unique" :
+        unique = True
+    #end if
+#end for
+if len(args) != 1 :
+    raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
+#end if
+
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[args[0].lower()],
+    private = False
+  )
+conn.attach_asyncio(loop)
+dbus_daemon = ravel.def_proxy_interface \
+  (
+    name = DBUS.INTERFACE_DBUS,
+    kind = ravel.INTERFACE.CLIENT,
+    introspected = dbus.standard_interfaces[DBUS.INTERFACE_DBUS],
+    is_async = True
+  )(connection = conn, dest = DBUS.SERVICE_DBUS)
+reply = loop.run_until_complete \
+  (
+    loop.create_task
+      (
+        (dbus_daemon.ListNames, dbus_daemon.ListActivatableNames)[activatable]("/")
+      )
+  )[0]
+for name in sorted(reply) :
+    if name.startswith(":") == unique :
+        if show_owners :
+            reply = conn.send_with_reply_and_block \
+              (
+                dbus.Message.new_method_call
+                  (
+                    destination = DBUS.SERVICE_DBUS,
+                    path = DBUS.PATH_DBUS,
+                    iface = DBUS.INTERFACE_DBUS,
+                    method = "GetNameOwner"
+                  )
+                    .append_objects("s", name)
+              )
+            owner = reply.all_objects[0]
+            sys.stdout.write("%s -> %s\n" % (name, owner))
+        else :
+            sys.stdout.write(name + "\n")
+        #end if
+    #end if
+#end for
