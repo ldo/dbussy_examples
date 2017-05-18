@@ -63,31 +63,31 @@ dbus_daemon = ravel.def_proxy_interface \
     introspected = dbus.standard_interfaces[DBUS.INTERFACE_DBUS],
     is_async = True
   )(connection = conn, dest = DBUS.SERVICE_DBUS)
-reply = loop.run_until_complete \
-  (
-    loop.create_task
-      (
-        (dbus_daemon.ListNames, dbus_daemon.ListActivatableNames)[activatable]("/")
-      )
-  )[0]
-for name in sorted(reply) :
-    if name.startswith(":") == unique :
-        if show_owners :
-            reply = conn.send_with_reply_and_block \
-              (
-                dbus.Message.new_method_call
+
+async def mainline() :
+    reply = await (dbus_daemon.ListNames, dbus_daemon.ListActivatableNames)[activatable]("/")
+    reply = reply[0]
+    for name in sorted(reply) :
+        if name.startswith(":") == unique :
+            if show_owners :
+                reply = await conn.send_await_reply \
                   (
-                    destination = DBUS.SERVICE_DBUS,
-                    path = DBUS.PATH_DBUS,
-                    iface = DBUS.INTERFACE_DBUS,
-                    method = "GetNameOwner"
+                    dbus.Message.new_method_call
+                      (
+                        destination = DBUS.SERVICE_DBUS,
+                        path = DBUS.PATH_DBUS,
+                        iface = DBUS.INTERFACE_DBUS,
+                        method = "GetNameOwner"
+                      )
+                        .append_objects("s", name)
                   )
-                    .append_objects("s", name)
-              )
-            owner = reply.all_objects[0]
-            sys.stdout.write("%s -> %s\n" % (name, owner))
-        else :
-            sys.stdout.write(name + "\n")
+                owner = reply.all_objects[0]
+                sys.stdout.write("%s -> %s\n" % (name, owner))
+            else :
+                sys.stdout.write(name + "\n")
+            #end if
         #end if
-    #end if
-#end for
+    #end for
+#end mainline
+
+loop.run_until_complete(mainline())
