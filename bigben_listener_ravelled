@@ -36,7 +36,7 @@ def chime_received(args) :
 
 bus = ravel.session_bus()
 bus.attach_asyncio(loop)
-bus.register_signal \
+bus.listen_signal \
   (
     path = "/",
     fallback = True,
