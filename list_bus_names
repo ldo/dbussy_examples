@@ -58,7 +58,7 @@ conn = dbus.Connection.bus_get \
 conn.attach_asyncio(loop)
 dbus_daemon = ravel.def_proxy_interface \
   (
-    name = DBUS.INTERFACE_DBUS,
+    name = "DBusDaemon",
     kind = ravel.INTERFACE.CLIENT,
     introspected = dbus.standard_interfaces[DBUS.INTERFACE_DBUS],
     is_async = True
