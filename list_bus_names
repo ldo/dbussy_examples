@@ -66,22 +66,12 @@ dbus_daemon = ravel.def_proxy_interface \
 
 async def mainline() :
     reply = await (dbus_daemon.ListNames, dbus_daemon.ListActivatableNames)[activatable]("/")
-    reply = reply[0]
-    for name in sorted(reply) :
+    names = reply[0]
+    for name in sorted(names) :
         if name.startswith(":") == unique :
             if show_owners :
-                reply = await conn.send_await_reply \
-                  (
-                    dbus.Message.new_method_call
-                      (
-                        destination = DBUS.SERVICE_DBUS,
-                        path = DBUS.PATH_DBUS,
-                        iface = DBUS.INTERFACE_DBUS,
-                        method = "GetNameOwner"
-                      )
-                        .append_objects("s", name)
-                  )
-                owner = reply.all_objects[0]
+                reply = await dbus_daemon.GetNameOwner("/", name)
+                owner = reply[0]
                 sys.stdout.write("%s -> %s\n" % (name, owner))
             else :
                 sys.stdout.write(name + "\n")
