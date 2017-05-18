@@ -105,7 +105,6 @@ async def introspect_path(path) :
         #end for
         for i in range(len(result.nodes)) :
             node = result.nodes[i]
-            assert isinstance(node, dbus.Introspection.Node)
             expanded = await introspect_path(path + [node.name])
             result.nodes[i] = dbus.Introspection.Node \
               (
