@@ -138,36 +138,36 @@ async def report_time_prop(path, name) :
       (
             "%s %s = %05.1f"
         %
-            (path, name, (await getattr(server, "get_%s" % name)(path)) - start_time)
+            (path, name, (await getattr(server[path], "get_%s" % name)()) - start_time)
       )
 #end report_time_prop
 
 async def actions() :
     log_msg("starting script")
     await sleep_till(3)
-    await server.create("/path1", "val1")
+    await server["/path1"].create("val1")
     await sleep_till(4)
-    await server.set_value("/path1", "val1a")
+    await server["/path1"].set_value("val1a")
     await sleep_till(6)
-    await server.create("/path2", "val2")
+    await server["/path2"].create("val2")
     await report_time_prop("/path1", "create_time")
     await report_time_prop("/path1", "modify_time")
     log_msg \
       (
             "/path2 value = %s"
         %
-            repr(await server.get_value("/path1"))
+            repr(await server["/path1"].get_value())
       )
     await report_time_prop("/path2", "access_time")
     await sleep_till(8)
-    await server.delete("/path1")
+    await server["/path1"].delete()
     await sleep_till(9)
-    await server.create("/path3", "val3")
-    await server.set_value("/path2", "val2a")
+    await server["/path3"].create("val3")
+    await server["/path2"].set_value("val2a")
     await sleep_till(11)
-    await server.delete("/path2")
+    await server["/path2"].delete()
     await sleep_till(14)
-    await server.delete("/path3")
+    await server["/path3"].delete()
     await sleep_till(18)
     log_msg("finishing script")
 #end actions
