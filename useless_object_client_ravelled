@@ -1,0 +1,189 @@
+#!/usr/bin/python3
+#+
+# DBussy/Ravel example -- a client-side process for exercising
+# the object-selection and property mechanism. Run this after
+# starting the accompanying useless_object_server_xxx script
+# and observe the messages that are printed.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import time
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+useless_objects_bus_name = "com.example.useless_objects"
+useless_objects_iface_name = "com.example.useless_objects"
+
+start_time = time.time()
+loop = asyncio.get_event_loop()
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+
+def event_time() :
+    "time relative to the start of the script run."
+    return \
+        time.time() - start_time
+#end event_time
+
+def log_msg(msg) :
+    "prints a message line with a timestamp prefix."
+    now = event_time()
+    sys.stdout.write("%05.1f: %s\n" % (now, msg))
+#end log_msg
+
+def call_at(when, func, *args) :
+    "queues a callback to be invoked at a specified time relative to" \
+    " the start of the script run."
+    # not used any more
+    delay = when - event_time()
+    if delay > 0 :
+        loop.call_later(delay, func, *args)
+    else :
+        loop.call_soon(func, *args)
+    #end if
+#end call_at
+
+async def sleep_till(when) :
+    "delays a task until a specified time relative to the" \
+    " start of the script run."
+    delay = when - event_time()
+    if delay >= 0 :
+        await asyncio.sleep(delay)
+    #end if
+#end sleep_till
+
+#+
+# Interface
+#-
+
+@ravel.interface(ravel.INTERFACE.CLIENT, name = useless_objects_iface_name)
+class UselessObjectListener :
+    "client-side interface which defines only signal listeners."
+
+    @ravel.signal \
+      (
+        name = "object_created",
+        in_signature = [],
+        path_keyword = "object_path",
+      )
+    def object_created(self, object_path) :
+        log_msg("signal received: object “%s” created" % object_path)
+    #end object_created
+
+    @ravel.signal \
+      (
+        name = "object_deleted",
+        in_signature = [],
+        path_keyword = "object_path",
+      )
+    def object_deleted(self, object_path) :
+        log_msg("signal received: object “%s” deleted" % object_path)
+    #end object_deleted
+
+#end UselessObjectListener
+
+@ravel.signal \
+  (
+    name = "prop_changed",
+    path_keyword = "object_path",
+    in_signature = "sa{sv}as",
+    arg_keys = ("interface_name", "changed_properties", "invalidated_properties")
+  )
+def obj_prop_changed(object_path, interface_name, changed_properties, invalidated_properties) :
+    "reports on changes to useless_object properties."
+    if interface_name == useless_objects_iface_name :
+        log_msg("prop changed on %s %s %s" % (object_path, repr(changed_properties), repr(invalidated_properties)))
+    #end if
+#end obj_prop_changed
+
+bus.register \
+  (
+    path = "/",
+    fallback = True,
+    interface = UselessObjectListener
+  )
+bus.listen_signal \
+  (
+    path = "/",
+    fallback = True,
+    interface = DBUS.INTERFACE_PROPERTIES,
+    name = "PropertiesChanged",
+    func = obj_prop_changed
+  )
+server = ravel.def_proxy_interface \
+  (
+    name = useless_objects_iface_name,
+    kind = ravel.INTERFACE.CLIENT,
+    introspected = bus.introspect
+      (
+        destination = useless_objects_bus_name,
+        path = "/", timeout = DBUS.TIMEOUT_USE_DEFAULT
+      ).interfaces_by_name[useless_objects_iface_name],
+    is_async = True
+  )(connection = bus.connection, dest = useless_objects_bus_name)
+
+#+
+# Mainline
+#-
+
+async def report_time_prop(path, name) :
+    log_msg \
+      (
+            "%s %s = %05.1f"
+        %
+            (path, name, (await getattr(server, "get_%s" % name)(path)) - start_time)
+      )
+#end report_time_prop
+
+async def actions() :
+    log_msg("starting script")
+    await sleep_till(3)
+    await server.create("/path1", (dbus.BasicType(dbus.TYPE.STRING), "val1"))
+    await sleep_till(4)
+    await server.set_value("/path1", (dbus.BasicType(dbus.TYPE.STRING), "val1a"))
+    await sleep_till(6)
+    await server.create("/path2", (dbus.BasicType(dbus.TYPE.STRING), "val2"))
+    await report_time_prop("/path1", "create_time")
+    await report_time_prop("/path1", "modify_time")
+    log_msg \
+      (
+            "/path2 value = %s"
+        %
+            (await server.get_value("/path1"))
+      )
+    await report_time_prop("/path2", "access_time")
+    await sleep_till(8)
+    await server.delete("/path1")
+    await sleep_till(9)
+    await server.create("/path3", (dbus.BasicType(dbus.TYPE.STRING), "val3"))
+    await server.set_value("/path2", (dbus.BasicType(dbus.TYPE.STRING), "val2a"))
+    await sleep_till(11)
+    await server.delete("/path2")
+    await sleep_till(14)
+    await server.delete("/path3")
+    await sleep_till(18)
+    log_msg("finishing script")
+#end actions
+
+try :
+    loop.run_until_complete(actions())
+except KeyboardInterrupt :
+    # is there an easier way of cleaning up than this?
+    for task in asyncio.Task.all_tasks(loop) :
+        task.cancel()
+        try :
+            loop.run_until_complete(task)
+        except asyncio.CancelledError :
+            pass
+        #end try
+    #end for
+    print() # avoid terminal prompt appearing after ^C
+#end try
