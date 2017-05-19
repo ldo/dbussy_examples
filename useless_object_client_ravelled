@@ -138,7 +138,7 @@ async def report_time_prop(path, name) :
       (
             "%s %s = %05.1f"
         %
-            (path, name, (await getattr(server[path], "get_%s" % name)()) - start_time)
+            (path, name, (await getattr(server[path], name)) - start_time)
       )
 #end report_time_prop
 
@@ -147,7 +147,7 @@ async def actions() :
     await sleep_till(3)
     await server["/path1"].create("val1")
     await sleep_till(4)
-    await server["/path1"].set_value("val1a")
+    server["/path1"].value = "val1a"
     await sleep_till(6)
     await server["/path2"].create("val2")
     await report_time_prop("/path1", "create_time")
@@ -156,14 +156,14 @@ async def actions() :
       (
             "/path2 value = %s"
         %
-            repr(await server["/path1"].get_value())
+            repr(await server["/path1"].value)
       )
     await report_time_prop("/path2", "access_time")
     await sleep_till(8)
     await server["/path1"].delete()
     await sleep_till(9)
     await server["/path3"].create("val3")
-    await server["/path2"].set_value("val2a")
+    server["/path2"].value = "val2a"
     await sleep_till(11)
     await server["/path2"].delete()
     await sleep_till(14)
