@@ -124,7 +124,7 @@ server = ravel.def_proxy_interface \
     introspected = bus.introspect
       (
         destination = useless_objects_bus_name,
-        path = "/", timeout = DBUS.TIMEOUT_USE_DEFAULT
+        path = "/"
       ).interfaces_by_name[useless_objects_iface_name],
     is_async = True
   )(connection = bus.connection, dest = useless_objects_bus_name)
