@@ -110,12 +110,11 @@ bus.register \
     fallback = True,
     interface = UselessObjectListener
   )
-bus.listen_signal \
+bus.listen_propchanged \
   (
     path = "/",
     fallback = True,
-    interface = DBUS.INTERFACE_PROPERTIES,
-    name = "PropertiesChanged",
+    interface = useless_objects_iface_name,
     func = obj_prop_changed
   )
 server = ravel.def_proxy_interface \
