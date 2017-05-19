@@ -106,7 +106,6 @@ class UselessObjectServer :
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name in node :
             del node[useless_objects_iface_name]
-            self.bus.trim_object_tree()
             self.bus.send_signal \
               (
                 path = object_path,
