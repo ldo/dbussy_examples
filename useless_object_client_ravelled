@@ -39,18 +39,6 @@ def log_msg(msg) :
     sys.stdout.write("%05.1f: %s\n" % (now, msg))
 #end log_msg
 
-def call_at(when, func, *args) :
-    "queues a callback to be invoked at a specified time relative to" \
-    " the start of the script run."
-    # not used any more
-    delay = when - event_time()
-    if delay > 0 :
-        loop.call_later(delay, func, *args)
-    else :
-        loop.call_soon(func, *args)
-    #end if
-#end call_at
-
 async def sleep_till(when) :
     "delays a task until a specified time relative to the" \
     " start of the script run."
