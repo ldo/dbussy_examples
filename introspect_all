@@ -93,34 +93,26 @@ async def introspect_path(path) :
         method = "Introspect"
       )
     reply = await conn.send_await_reply(request)
-    if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
-        result = dbus.Introspection.parse(reply.expect_objects("s")[0])
-        for i in range(len(result.interfaces)) :
-            interface = result.interfaces[i]
-            if interface.name in interfaces_seen :
-                result.interfaces[i] = dbus.Introspection.StubInterface(name = interface.name)
-            else :
-                interfaces_seen.add(interface.name)
-            #end if
-        #end for
-        for i in range(len(result.nodes)) :
-            node = result.nodes[i]
-            expanded = await introspect_path(path + [node.name])
-            result.nodes[i] = dbus.Introspection.Node \
-              (
-                name = node.name,
-                interfaces = expanded.interfaces,
-                nodes = expanded.nodes,
-                annotations = expanded.annotations
-              )
-        #end for
-    elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
-        err = dbus.Error()
-        err.set_from_message(reply)
-        err.raise_if_set()
-    else :
-        raise RuntimeError("unexpected reply type %d" % reply.type)
-    #end if
+    result = dbus.Introspection.parse(reply.expect_return_objects("s")[0])
+    for i in range(len(result.interfaces)) :
+        interface = result.interfaces[i]
+        if interface.name in interfaces_seen :
+            result.interfaces[i] = dbus.Introspection.StubInterface(name = interface.name)
+        else :
+            interfaces_seen.add(interface.name)
+        #end if
+    #end for
+    for i in range(len(result.nodes)) :
+        node = result.nodes[i]
+        expanded = await introspect_path(path + [node.name])
+        result.nodes[i] = dbus.Introspection.Node \
+          (
+            name = node.name,
+            interfaces = expanded.interfaces,
+            nodes = expanded.nodes,
+            annotations = expanded.annotations
+          )
+    #end for
     return \
         result
 #end introspect_path
