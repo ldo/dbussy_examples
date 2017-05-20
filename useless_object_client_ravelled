@@ -127,13 +127,17 @@ server = ravel.def_proxy_interface \
         path = "/"
       ).interfaces_by_name[useless_objects_iface_name],
     is_async = True
-  )(connection = bus.connection, dest = useless_objects_bus_name)
+  )
+server = server(connection = bus.connection, dest = useless_objects_bus_name)
+  # only need one instance
 
 #+
 # Mainline
 #-
 
 async def create_object_if(path, initial) :
+    "tries to create an object at the specified path, recovering gracefully" \
+    " if it already exists."
     try :
         await server[path].create(initial)
     except dbus.DBusError as err :
@@ -145,6 +149,7 @@ async def create_object_if(path, initial) :
 #end async def create_object_if
 
 async def report_time_props(path) :
+    "reports the various time properties associated with an object."
     obj = server[path]
     log_msg \
       (
