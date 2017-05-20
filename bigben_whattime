@@ -30,12 +30,4 @@ message = dbus.Message.new_method_call \
     method = "whats_the_time"
   )
 reply = conn.send_with_reply_and_block(message)
-if reply.type == DBUS.MESSAGE_TYPE_METHOD_RETURN :
-    sys.stdout.write(reply.expect_objects("s")[0] + "\n")
-elif reply.type == DBUS.MESSAGE_TYPE_ERROR :
-    err = dbus.Error()
-    reply.set_error(err)
-    err.raise_if_set()
-else :
-    raise RuntimeError("unexpected reply type %d" % reply.type)
-#end if
+sys.stdout.write(reply.expect_return_objects("s")[0] + "\n")
