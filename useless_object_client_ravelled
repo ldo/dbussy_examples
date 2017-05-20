@@ -133,6 +133,17 @@ server = ravel.def_proxy_interface \
 # Mainline
 #-
 
+async def create_object_if(path, initial) :
+    try :
+        await server[path].create(initial)
+    except dbus.DBusError as err :
+        if err.name != DBUS.ERROR_OBJECT_PATH_IN_USE :
+            raise
+        #end if
+        log_msg("object %s already exists" % path)
+    #end try
+#end async def create_object_if
+
 async def report_time_props(path) :
     obj = server[path]
     log_msg \
@@ -151,11 +162,11 @@ async def report_time_props(path) :
 async def actions() :
     log_msg("starting script")
     await sleep_till(3)
-    await server["/path1"].create("val1")
+    await create_object_if("/path1", "val1")
     await sleep_till(4)
     server["/path1"].value = "val1a"
     await sleep_till(6)
-    await server["/path2"].create("val2")
+    await create_object_if("/path2", "val2")
     await report_time_props("/path1")
     log_msg \
       (
@@ -167,7 +178,7 @@ async def actions() :
     await sleep_till(8)
     await server["/path1"].delete()
     await sleep_till(9)
-    await server["/path3"].create("val3")
+    await create_object_if("/path3", "val3")
     server["/path2"].value = "val2a"
     await sleep_till(11)
     await server["/path2"].delete()
