@@ -146,7 +146,7 @@ async def create_object_if(path, initial) :
         #end if
         log_msg("object %s already exists" % path)
     #end try
-#end async def create_object_if
+#end create_object_if
 
 async def report_time_props(path) :
     "reports the various time properties associated with an object."
