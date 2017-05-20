@@ -38,12 +38,20 @@ def message_filter(connection, message, data) :
 # Mainline
 #-
 
-if len(sys.argv) != 2 :
+if len(sys.argv) < 2 :
     raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
 #end if
+bus_spec = sys.argv[1]
+match_rules = sys.argv[2:]
 
-conn = conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()], private = False)
+conn = conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()], private = False)
 conn.attach_asyncio(loop)
 conn.add_filter(message_filter, None)
-conn.bus_add_match("type='signal'")
+if len(match_rules) != 0 :
+    for rule in match_rules :
+        conn.bus_add_match(rule)
+    #end for
+else :
+    conn.bus_add_match("type=signal")
+#end if
 loop.run_forever()
