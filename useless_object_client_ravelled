@@ -134,15 +134,16 @@ server = ravel.def_proxy_interface \
 #-
 
 async def report_time_props(path) :
+    obj = server[path]
     log_msg \
       (
             "%s create = %05.1f, modify = %05.1f, access = %05.1f"
         %
             (
                 path,
-                (await server[path].create_time) - start_time,
-                (await server[path].modify_time) - start_time,
-                (await server[path].access_time) - start_time,
+                (await obj.create_time) - start_time,
+                (await obj.modify_time) - start_time,
+                (await obj.access_time) - start_time,
             )
       )
 #end report_time_props
