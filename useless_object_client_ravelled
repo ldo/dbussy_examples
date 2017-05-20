@@ -133,14 +133,19 @@ server = ravel.def_proxy_interface \
 # Mainline
 #-
 
-async def report_time_prop(path, name) :
+async def report_time_props(path) :
     log_msg \
       (
-            "%s %s = %05.1f"
+            "%s create = %05.1f, modify = %05.1f, access = %05.1f"
         %
-            (path, name, (await getattr(server[path], name)) - start_time)
+            (
+                path,
+                (await server[path].create_time) - start_time,
+                (await server[path].modify_time) - start_time,
+                (await server[path].access_time) - start_time,
+            )
       )
-#end report_time_prop
+#end report_time_props
 
 async def actions() :
     log_msg("starting script")
@@ -150,15 +155,14 @@ async def actions() :
     server["/path1"].value = "val1a"
     await sleep_till(6)
     await server["/path2"].create("val2")
-    await report_time_prop("/path1", "create_time")
-    await report_time_prop("/path1", "modify_time")
+    await report_time_props("/path1")
     log_msg \
       (
             "/path2 value = %s"
         %
             repr(await server["/path1"].value)
       )
-    await report_time_prop("/path2", "access_time")
+    await report_time_props("/path2")
     await sleep_till(8)
     await server["/path1"].delete()
     await sleep_till(9)
