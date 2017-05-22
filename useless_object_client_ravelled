@@ -105,16 +105,14 @@ bus.listen_propchanged \
     interface = useless_objects_iface_name,
     func = obj_prop_changed
   )
-server = ravel.def_proxy_interface \
+server = loop.run_until_complete \
   (
-    name = useless_objects_iface_name,
-    kind = ravel.INTERFACE.CLIENT,
-    introspected = bus.introspect
+    bus.get_proxy_interface_async
       (
         destination = useless_objects_bus_name,
-        path = "/"
-      ).interfaces_by_name[useless_objects_iface_name],
-    is_async = True
+        path = "/",
+        interface = useless_objects_iface_name,
+      )
   )
 server = server(connection = bus.connection, dest = useless_objects_bus_name)
   # only need one instance
