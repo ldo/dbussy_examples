@@ -174,11 +174,15 @@ class UselessObjectServer :
         path_keyword = "object_path",
         change_notification = dbus.Introspection.PROP_CHANGE_NOTIFICATION.CONST
       )
-    def get_create_time(self, object_path) :
+    async def get_create_time(self, object_path) :
+        # This method is defined as a coroutine just to demonstrate it
+        # can be done, to show how a time-consuming service can be
+        # performed in an event-loop-friendly fashion.
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name not in node :
             raise ravel.HandlerError(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
+        await asyncio.sleep(1) # pretend to take some time to reply
         return \
             round(node[useless_objects_iface_name].create_time)
     #end get_create_time
