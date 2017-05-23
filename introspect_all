@@ -4,17 +4,20 @@
 # paths at a specified bus name. This version uses asyncio. Invoke
 # this script as follows:
 #
-#    introspect_all [--implementing-interface=«interface»] «bus» «bus-name»
+#    introspect_all [--implementing-interface=«interface»] [--list-interfaces] \
+#        «bus» «bus-name»
 #
 # where «bus» is either “session” or “system”, indicating which bus to
 # do the query on, and “bus-name” is the name of the service on the
 # bus to query.
 #
-# In the absence of the --implementing-interface option, the response
-# is an XML string in the usual introspection format, indicating the
-# protocol for communicating with the entire object tree. If this
-# option is present, then the output is the list of object paths which
-# were reported to implement the named «interface».
+# In the absence of either option, the response is an XML string in
+# the usual introspection format, indicating the protocol for
+# communicating with the entire object tree. If the
+# --implementing-interface option is present, then the output is the
+# list of object paths which were reported to implement the named
+# «interface». Otherwise, if --list-interfaces was specified, then the
+# output is just the list of names of interfaces seen.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
@@ -68,17 +71,26 @@ def get_terminal_window_size() :
 
 loop = asyncio.get_event_loop()
 
+list_interfaces = False
 want_interface = None
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["implementing-interface="]
+    ["implementing-interface=", "list-interfaces"]
   )
 for keyword, value in opts :
     if keyword == "--implementing-interface" :
         want_interface = value
+    elif keyword == "--list-interfaces" :
+        list_interfaces = True
     #end if
+#end if
+if list_interfaces and want_interface != None :
+    raise getopt.GetoptError \
+      (
+        "specify either --implementing-interface or --list-interfaces, not both"
+      )
 #end if
 if len(args) != 2 :
     raise getopt.GetoptError("usage: %s session|system «bus-name»" % sys.argv[0])
@@ -181,7 +193,11 @@ if progress_task != None :
         pass
     #end try
 #end if
-if want_interface != None :
+if list_interfaces :
+    for interface in sorted(interfaces_seen) :
+        sys.stdout.write(interface + "\n")
+    #end for
+elif want_interface != None :
     show_matching_interface(sys.stdout, [], result)
 else :
     sys.stdout.write(result.unparse())
