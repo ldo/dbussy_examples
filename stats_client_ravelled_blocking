@@ -30,10 +30,7 @@ for key, val in zip(["mean", "stdev", "pstdev"], server.mean_and_deviation(nums)
 #end for
 try :
     results["harmonic_mean"] = server.harmonic_mean(nums)[0]
-except ravel.dbus.DBusError as err :
-    if err.name != ravel.DBUS.ERROR_UNKNOWN_METHOD :
-        raise
-    #end if
+except AttributeError :
     sys.stdout.write("harmonic_mean not available\n")
 #end try
 for key, val in zip(["median", "max", "min"], server.hi_lo(nums)) :
