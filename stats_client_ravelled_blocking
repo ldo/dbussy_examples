@@ -19,8 +19,7 @@ stats_iface_name = "com.example.stats"
 nr_nums = random.randint(10, 20)
 nums = list(random.random() for i in range(nr_nums))
 
-server = ravel.session_bus() \
-    .get_object(stats_bus_name, stats_path_name) \
+server = ravel.session_bus()[stats_bus_name][stats_path_name] \
     .get_interface(stats_iface_name)
 
 sys.stdout.write("nums = %s\n" % repr(nums))
