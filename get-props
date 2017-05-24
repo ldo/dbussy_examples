@@ -1,0 +1,52 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- obtain all property values for an interface at an
+# object path from a bus peer. Invoke this script as follows:
+#
+#     get-props session|system «bus_name» «path» «interface»
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+#+
+# Mainline
+#-
+
+loop = asyncio.get_event_loop()
+
+if len(sys.argv) != 5 :
+    raise getopt.GetoptError("usage: %s session|system «bus-name» «path» «interface»" % sys.argv[0])
+#end if
+which_bus, destination, object_path, interface_name = sys.argv[1:]
+
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[which_bus.lower()],
+    private = False
+  )
+conn.attach_asyncio(loop)
+
+request = dbus.Message.new_method_call \
+  (
+    destination = destination,
+    path = object_path,
+    iface = DBUS.INTERFACE_PROPERTIES,
+    method = "GetAll"
+  )
+request.append_objects("s", interface_name)
+reply = loop.run_until_complete(conn.send_await_reply(request))
+values = reply.expect_return_objects("a{sv}")[0]
+for propname in sorted(values.keys()) :
+    proptype, propvalue = values[propname]
+    sys.stdout.write("%s(%s) = %s\n" % (propname, proptype, repr(propvalue)))
+#end for
