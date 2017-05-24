@@ -27,11 +27,11 @@ results = {}
 for key, val in zip(["mean", "stdev", "pstdev"], server.mean_and_deviation(nums)) :
     results[key] = val
 #end for
-try :
+if hasattr(server, "harmonic_mean") :
     results["harmonic_mean"] = server.harmonic_mean(nums)[0]
-except AttributeError :
+else :
     sys.stdout.write("harmonic_mean not available\n")
-#end try
+#end if
 for key, val in zip(["median", "max", "min"], server.hi_lo(nums)) :
     results[key] = val
 #end for
