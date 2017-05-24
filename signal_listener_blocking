@@ -19,7 +19,7 @@ from dbussy import \
 #-
 
 def message_filter(connection, message, data) :
-    sys.stdout.write("filter got a message, type %d, serial = %d, sig = %s\n" % (message.type, message.serial, repr(message.signature)))
+    sys.stdout.write("filter got a message, type %s(%d), serial = %d, sig = %s\n" % (message.type_to_string(message.type), message.type, message.serial, repr(message.signature)))
     if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
         sys.stdout.write(" destination = %s\n" % repr(message.destination))
     #end if
