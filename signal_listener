@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 #+
 # DBussy example -- listen for signals on D-Bus using the asyncio event loop.
+# This version also allows the specification of custom filter rules.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
