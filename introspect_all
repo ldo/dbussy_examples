@@ -73,17 +73,23 @@ loop = asyncio.get_event_loop()
 
 list_interfaces = False
 want_interface = None
+verbose = True
+skip_standard = False
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
-    "",
-    ["implementing-interface=", "list-interfaces"]
+    "qs",
+    ["implementing-interface=", "list-interfaces", "quiet", "skip-standard"]
   )
 for keyword, value in opts :
     if keyword == "--implementing-interface" :
         want_interface = value
     elif keyword == "--list-interfaces" :
         list_interfaces = True
+    elif keyword == "-q" or keyword == "--quiet" :
+        verbose = False
+    elif keyword == "-s" or keyword == "--skip-standard" :
+        skip_standard = True
     #end if
 #end if
 if list_interfaces and want_interface != None :
@@ -105,6 +111,9 @@ conn = dbus.Connection.bus_get \
 conn.attach_asyncio(loop)
 
 interfaces_seen = set()
+if skip_standard :
+    interfaces_seen |= dbus.standard_interfaces.keys()
+#end if
 nr_objects = 0
 current_path = None
 
@@ -177,7 +186,11 @@ def show_matching_interface(out, parent, introspection) :
     #end for
 #end show_matching_interface
 
-line_length = get_terminal_window_size()[0]
+if verbose :
+    line_length = get_terminal_window_size()[0]
+else :
+    line_length = None
+#end if
 if line_length != None :
     progress_task = loop.create_task(show_progress())
 else :
