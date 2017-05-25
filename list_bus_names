@@ -63,6 +63,8 @@ dbus_daemon = ravel.def_proxy_interface \
     introspected = dbus.standard_interfaces[DBUS.INTERFACE_DBUS],
     is_async = True
   )(connection = conn, dest = DBUS.SERVICE_DBUS)["/"]
+    # should the path be DBUS.PATH_DBUS? But when I introspect the daemon,
+    # it doesn’t report the existence of any nodes for that path.
 
 async def mainline() :
     reply = await (dbus_daemon.ListNames, dbus_daemon.ListActivatableNames)[activatable]()
