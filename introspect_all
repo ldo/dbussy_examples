@@ -71,6 +71,7 @@ def get_terminal_window_size() :
 
 loop = asyncio.get_event_loop()
 
+full_node_names = False
 list_interfaces = False
 want_interface = None
 verbose = True
@@ -79,10 +80,12 @@ opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "qs",
-    ["implementing-interface=", "list-interfaces", "quiet", "skip-standard"]
+    ["full-node-names", "implementing-interface=", "list-interfaces", "quiet", "skip-standard"]
   )
 for keyword, value in opts :
-    if keyword == "--implementing-interface" :
+    if keyword == "--full-node-names" :
+        full_node_names = True
+    elif keyword == "--implementing-interface" :
         want_interface = value
     elif keyword == "--list-interfaces" :
         list_interfaces = True
@@ -142,9 +145,14 @@ async def introspect_path(path) :
     for i in range(len(result.nodes)) :
         node = result.nodes[i]
         expanded = await introspect_path(path + [node.name])
+        if full_node_names :
+            node_name = dbus.unsplit_path(path + [node.name])
+        else :
+            node_name = node.name
+        #end if
         result.nodes[i] = dbus.Introspection.Node \
           (
-            name = node.name,
+            name = node_name,
             interfaces = expanded.interfaces,
             nodes = expanded.nodes,
             annotations = expanded.annotations
