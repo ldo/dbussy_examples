@@ -49,7 +49,7 @@ class Stats :
             results.stdev = statistics.stdev(numbers)
             results.pstdev = statistics.pstdev(numbers)
         except statistics.StatisticsError as err :
-            raise ravel.HandlerError(ravel.DBUS.ERROR_INVALID_ARGS, "StatisticsError: %s" % err.args[0])
+            raise ravel.ErrorReturn(ravel.DBUS.ERROR_INVALID_ARGS, "StatisticsError: %s" % err.args[0])
         #end try
     #end mean_and_deviation
 

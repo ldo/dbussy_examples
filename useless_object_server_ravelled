@@ -81,7 +81,7 @@ class UselessObjectServer :
     def create_object(self, object_path, initial_value) :
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name in node :
-            raise ravel.HandlerError(DBUS.ERROR_OBJECT_PATH_IN_USE, "object already exists")
+            raise ravel.ErrorReturn(DBUS.ERROR_OBJECT_PATH_IN_USE, "object already exists")
         #end if
         node[useless_objects_iface_name] = UselessObject(initial_value)
         self.bus.send_signal \
@@ -128,7 +128,7 @@ class UselessObjectServer :
     def get_value(self, object_path) :
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name not in node :
-            raise ravel.HandlerError(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
         value = node[useless_objects_iface_name].value
         return \
@@ -146,7 +146,7 @@ class UselessObjectServer :
     def set_value(self, object_path, new_type, new_value) :
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name not in node :
-            raise ravel.HandlerError(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
         node[useless_objects_iface_name].value = new_value
         self.bus.prop_changed \
@@ -180,7 +180,7 @@ class UselessObjectServer :
         # performed in an event-loop-friendly fashion.
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name not in node :
-            raise ravel.HandlerError(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
         await asyncio.sleep(1) # pretend to take some time to reply
         return \
@@ -197,7 +197,7 @@ class UselessObjectServer :
     def get_access_time(self, object_path) :
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name not in node :
-            raise ravel.HandlerError(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
         return \
             round(node[useless_objects_iface_name].access_time)
@@ -213,7 +213,7 @@ class UselessObjectServer :
     def get_modify_time(self, object_path) :
         node = self.bus.user_data[object_path]
         if useless_objects_iface_name not in node :
-            raise ravel.HandlerError(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
         return \
             round(node[useless_objects_iface_name].modify_time)
