@@ -99,16 +99,14 @@ async def mainline() :
     mixer_names = list(node.name for node in (await kmix.introspect_async(mixers_base)).nodes)
     mixers_by_name = {}
     for mixer_name in mixer_names :
+        mixer = await kmix[mixers_base + [mixer_name]].get_async_interface(mixer_iface)
         mixers_by_name[mixer_name] = \
             {
                 "name" : mixer_name,
-                "mixer" : await kmix[mixers_base + [mixer_name]].get_async_interface(mixer_iface),
+                 "id" : await mixer.id,
+                 "masterControl" : await mixer.masterControl,
             }
         # cannot do this directly in a dict comprehension -- get “not supported” error
-    #end for
-    for mixer in mixers_by_name.values() :
-        mixer["id"] = await mixer["mixer"].id
-        mixer["masterControl"] = await mixer["mixer"].masterControl
     #end for
     mixers_by_id = dict((mixer["id"], mixer) for mixer in mixers_by_name.values())
     if verbose :
