@@ -109,9 +109,10 @@ async def mainline() :
         mixer = await kmix[mixers_base + [mixer_name]].get_async_interface(mixer_iface)
         mixers_by_name[mixer_name] = \
             {
-                "name" : mixer_name,
+                # "name" : mixer_name, # not needed
                 "id" : await mixer.id,
                 "masterControl" : await mixer.masterControl,
+                  # luckily this is a full path
             }
         # cannot do this directly in a dict comprehension -- get “not supported” error
     #end for
