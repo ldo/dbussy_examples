@@ -94,7 +94,12 @@ async def mainline() :
     current_master_control_id = await iface.currentMasterControl
     mixer_paths = await iface.mixers
     if verbose :
-        sys.stdout.write("current master mixer = %s, current master control = %s, mixers = %s\n" % (repr(current_master_mixer_id), repr(current_master_control_id), repr(mixer_paths)))
+        sys.stdout.write \
+          (
+                "current master mixer = %s, current master control = %s, mixers = %s\n"
+            %
+                (repr(current_master_mixer_id), repr(current_master_control_id), repr(mixer_paths))
+          )
     #end if
     mixer_names = list(node.name for node in (await kmix.introspect_async(mixers_base)).nodes)
     mixers_by_name = {}
