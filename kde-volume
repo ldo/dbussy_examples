@@ -103,8 +103,8 @@ async def mainline() :
         mixers_by_name[mixer_name] = \
             {
                 "name" : mixer_name,
-                 "id" : await mixer.id,
-                 "masterControl" : await mixer.masterControl,
+                "id" : await mixer.id,
+                "masterControl" : await mixer.masterControl,
             }
         # cannot do this directly in a dict comprehension -- get “not supported” error
     #end for
