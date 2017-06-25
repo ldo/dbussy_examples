@@ -101,6 +101,9 @@ async def mainline() :
                 (repr(current_master_mixer_id), repr(current_master_control_id), repr(mixer_paths))
           )
     #end if
+    # Unfortunately, current_master_mixer_id is not an object path. So I need to introspect
+    # all mixers for devices and streams (both capture and playback -- note I can’t tell
+    # which is which!) to get their “id” properties to find which one matches.
     mixer_names = list(node.name for node in (await kmix.introspect_async(mixers_base)).nodes)
     mixers_by_name = {}
     for mixer_name in mixer_names :
