@@ -92,8 +92,8 @@ async def mainline() :
     iface = await mixers.get_async_interface(mixset_iface)
     current_master_mixer_id = await iface.currentMasterMixer
     current_master_control_id = await iface.currentMasterControl
-    mixer_paths = await iface.mixers
     if verbose :
+        mixer_paths = await iface.mixers
         sys.stdout.write \
           (
                 "current master mixer = %s, current master control = %s, mixers = %s\n"
