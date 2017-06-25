@@ -129,8 +129,8 @@ async def mainline() :
     elif new_mute != None :
         master_control.mute = new_mute
     #end if
-    # await (await kmix.get_interface_async(master_control_path, mixcontrol_iface)).set_prop_flush()
-        # not necessary because will be flushed by following further calls
+    await ravel.set_prop_flush(master_control)
+      # not really necessary because will be flushed by following further calls
     abs_volume = await master_control.absoluteVolume
     volume = await master_control.volume
     muted = await master_control.mute
