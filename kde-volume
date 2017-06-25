@@ -38,9 +38,6 @@
 import sys
 import asyncio
 import getopt
-import dbussy as dbus
-from dbussy import \
-    DBUS
 import ravel
 
 kmix_dest = "org.kde.kmix"
