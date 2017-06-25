@@ -1,0 +1,150 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- examine and change master audio volume settings under KDE.
+# Invoke this script as follows:
+#
+#     kde-volume
+#
+# to show the current volume and mute settings, or
+#
+#    kde-volume «volume»
+#
+# to set the volume to «volume», or
+#
+#    kde-volume --mute «mute»
+#
+# to set the mute state to «mute»
+# «volume» can be specified as a percentage (ending with “%”) or as a fraction
+# in [0 .. 1], while «mute» is 1 for muted or 0 for not muted. For example,
+#
+#     kde-volume 40%
+#
+# or
+#
+#     kde-volume 0.4
+#
+# either of which will set the volume to 40%, or
+#
+#     kde-volume --mute 0
+#
+# to ensure muting is off.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+kmix_dest = "org.kde.kmix"
+mixers_base = ["Mixers"]
+mixset_iface = "org.kde.KMix.MixSet"
+mixer_iface = "org.kde.KMix.Mixer"
+mixcontrol_iface = "org.kde.KMix.Control"
+
+#+
+# Mainline
+#-
+
+loop = asyncio.get_event_loop()
+
+verbose = False
+new_vol = None
+new_mute = None
+set_mute = False
+opts, args = getopt.getopt \
+  (
+    sys.argv[1:],
+    "",
+    ["mute", "verbose"]
+  )
+for keyword, value in opts :
+    if keyword == "--mute" :
+        set_mute = True
+    elif keyword == "--verbose" :
+        verbose = True
+    #end if
+#end for
+if len(args) not in (0, 1) :
+    raise getopt.GetoptError("expecting at most one arg")
+#end if
+if len(args) > 0 :
+    if set_mute :
+        new_mute = bool(int(args[0]))
+    else :
+        new_vol = args[0]
+        if new_vol.endswith("%") :
+            new_vol = float(new_vol[:-1]) / 100
+        else :
+            new_vol = float(new_vol)
+        #end if
+    #end if
+#end if
+
+async def mainline() :
+    conn = await ravel.session_bus_async(loop)
+    kmix = conn[kmix_dest]
+    mixers = kmix[mixers_base]
+    iface = await mixers.get_async_interface(mixset_iface)
+    current_master_mixer_id = await iface.currentMasterMixer
+    current_master_control_id = await iface.currentMasterControl
+    mixer_paths = await iface.mixers
+    if verbose :
+        sys.stdout.write("current master mixer = %s, current master control = %s, mixers = %s\n" % (repr(current_master_mixer_id), repr(current_master_control_id), repr(mixer_paths)))
+    #end if
+    mixer_names = list(node.name for node in (await kmix.introspect_async(mixers_base)).nodes)
+    mixers_by_name = {}
+    for mixer_name in mixer_names :
+        mixers_by_name[mixer_name] = \
+            {
+                "name" : mixer_name,
+                "mixer" : await kmix[mixers_base + [mixer_name]].get_async_interface(mixer_iface),
+            }
+        # cannot do this directly in a dict comprehension -- get “not supported” error
+    #end for
+    for mixer in mixers_by_name.values() :
+        mixer["id"] = await mixer["mixer"].id
+        mixer["masterControl"] = await mixer["mixer"].masterControl
+    #end for
+    mixers_by_id = dict((mixer["id"], mixer) for mixer in mixers_by_name.values())
+    if verbose :
+        sys.stdout.write("mixers = %s\n" % repr(mixers_by_id))
+    #end if
+    master_mixer_path = mixers_base + [mixers_by_id[current_master_mixer_id]["name"]]
+    master_control_path = mixers_by_id[current_master_mixer_id]["masterControl"]
+    if verbose :
+        sys.stdout.write \
+          (
+                "master_mixer = %s, master_control = %s\n"
+            %
+                (repr(master_mixer_path), repr(master_control_path))
+          )
+    #end if
+    master_control = await kmix[master_control_path].get_async_interface(mixcontrol_iface)
+    abs_volume_min = await master_control.absoluteVolumeMin
+    abs_volume_max = await master_control.absoluteVolumeMax
+    if new_vol != None :
+        master_control.absoluteVolume = round(new_vol * abs_volume_max)
+    elif new_mute != None :
+        master_control.mute = new_mute
+    #end if
+    # await (await kmix.get_interface_async(master_control_path, mixcontrol_iface)).set_prop_flush()
+        # not necessary because will be flushed by following further calls
+    abs_volume = await master_control.absoluteVolume
+    volume = await master_control.volume
+    muted = await master_control.mute
+    sys.stdout.write("control %s vol " % current_master_control_id)
+    if verbose :
+        sys.stdout.write("%d [%d .. %d] = " % (abs_volume, abs_volume_min, abs_volume_max))
+    #end if
+    sys.stdout.write("%.3f = %d%%, muted = %s\n" % (abs_volume / abs_volume_max, volume, muted))
+#end mainline
+
+loop.run_until_complete(mainline())
