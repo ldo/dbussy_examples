@@ -88,12 +88,11 @@ if len(args) > 0 :
 async def mainline() :
     conn = await ravel.session_bus_async(loop)
     kmix = conn[kmix_dest]
-    mixers = kmix[mixers_base]
-    mixset = await mixers.get_async_interface(mixset_iface)
-    current_master_mixer_id = await mixset.currentMasterMixer
-    current_master_control_id = await mixset.currentMasterControl
+    mixers = await kmix[mixers_base].get_async_interface(mixset_iface)
+    current_master_mixer_id = await mixers.currentMasterMixer
+    current_master_control_id = await mixers.currentMasterControl
     if verbose :
-        mixer_paths = await mixset.mixers
+        mixer_paths = await mixers.mixers
         sys.stdout.write \
           (
                 "current master mixer = %s, current master control = %s, mixers = %s\n"
