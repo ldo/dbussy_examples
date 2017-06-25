@@ -112,16 +112,7 @@ async def mainline() :
     if verbose :
         sys.stdout.write("mixers = %s\n" % repr(mixers_by_id))
     #end if
-    master_mixer_path = mixers_base + [mixers_by_id[current_master_mixer_id]["name"]]
     master_control_path = mixers_by_id[current_master_mixer_id]["masterControl"]
-    if verbose :
-        sys.stdout.write \
-          (
-                "master_mixer = %s, master_control = %s\n"
-            %
-                (repr(master_mixer_path), repr(master_control_path))
-          )
-    #end if
     master_control = await kmix[master_control_path].get_async_interface(mixcontrol_iface)
     abs_volume_min = await master_control.absoluteVolumeMin
     abs_volume_max = await master_control.absoluteVolumeMax
