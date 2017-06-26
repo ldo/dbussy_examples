@@ -132,7 +132,7 @@ class Stats :
 # Mainline
 #-
 
-holdname = bus.request_name(bus_name = stats_bus_name, flags = ravel.DBUS.NAME_FLAG_DO_NOT_QUEUE)
+bus.request_name(bus_name = stats_bus_name, flags = ravel.DBUS.NAME_FLAG_DO_NOT_QUEUE)
 bus.register \
   (
     path = "/",
@@ -153,5 +153,4 @@ except KeyboardInterrupt :
     #end for
     print() # avoid terminal prompt appearing after ^C
 #end try
-holdname = None
 bus = None

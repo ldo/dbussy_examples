@@ -239,7 +239,7 @@ class UselessObjectServer :
 # Mainline
 #-
 
-holdname = bus.request_name \
+bus.request_name \
   (
     bus_name = useless_objects_bus_name,
     flags = DBUS.NAME_FLAG_DO_NOT_QUEUE
@@ -264,5 +264,4 @@ except KeyboardInterrupt :
     #end for
     print() # avoid terminal prompt appearing after ^C
 #end try
-holdname = None
 bus = None

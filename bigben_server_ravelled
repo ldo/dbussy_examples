@@ -125,7 +125,7 @@ class BigBen :
 
 bus = ravel.session_bus()
 bus.attach_asyncio(loop)
-holdname = bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
+bus.request_name(bus_name = my_bus_name, flags = 0)
 bus.register \
   (
     path = "/",
@@ -147,5 +147,4 @@ except KeyboardInterrupt :
     #end for
     print() # avoid terminal prompt appearing after ^C
 #end try
-holdname = None
 bus = None
