@@ -125,7 +125,7 @@ class BigBen :
 
 bus = ravel.session_bus()
 bus.attach_asyncio(loop)
-bus.request_name(bus_name = my_bus_name, flags = 0)
+bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
 bus.register \
   (
     path = "/",
