@@ -5,12 +5,14 @@
 # interface class generated from an Introspection with
 # ravel.def_proxy_interface. Invoke this script as follows:
 #
-#     list_bus_names [--activatable] [--owners] [--unique]
+#     list_bus_names [--activatable] [--owners] [--queued] [--unique]
 #
-# where --activatable specifies you want a list of activatable (as opposed
-# to active) names, --owners shows the unique bus names owning the names,
-# and --unique means you want the unique names (beginning with a colon
-# and assigned by the D-Bus daemon) as opposed to the requested names.
+# where --activatable specifies you want a list of activatable (as
+# opposed to active) names, --owners shows the unique bus names owning
+# the names, --queued shows bus peers in the ownership queue
+# (excluding the actual owner if --owner is also specified), and
+# --unique means you want the unique names (beginning with a colon and
+# assigned by the D-Bus daemon) as opposed to the requested names.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
@@ -30,18 +32,21 @@ loop = asyncio.get_event_loop()
 
 activatable = False
 show_owners = False
+show_queued = False
 unique = False
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["activatable", "owners", "unique"]
+    ["activatable", "owners", "queued", "unique"]
   )
 for keyword, value in opts :
     if keyword == "--activatable" :
         activatable = True
     elif keyword == "--owners" :
         show_owners = True
+    elif keyword == "--queued" :
+        show_queued = True
     elif keyword == "--unique" :
         unique = True
     #end if
@@ -71,13 +76,20 @@ async def mainline() :
     names = reply[0]
     for name in sorted(names) :
         if name.startswith(":") == unique :
+            sys.stdout.write(name)
             if show_owners :
                 reply = await dbus_daemon.GetNameOwner(name)
                 owner = reply[0]
-                sys.stdout.write("%s -> %s\n" % (name, owner))
+                sys.stdout.write(" -> %s" % owner)
             else :
-                sys.stdout.write(name + "\n")
+                owner = None
             #end if
+            if show_queued :
+                reply = await dbus_daemon.ListQueuedOwners(name)
+                queued = reply[0]
+                sys.stdout.write(" <- [%s]" % ", ".join(repr(q) for q in queued if q != owner))
+            #end if
+            sys.stdout.write("\n")
         #end if
     #end for
 #end mainline
