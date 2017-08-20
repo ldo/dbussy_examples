@@ -54,6 +54,10 @@ if len(args) < 5 :
 #end if
 which_bus, destination, object_path, interface_name, method_name = args[:5]
 args = args[5:]
+dbus.validate_bus_name(destination)
+dbus.validate_path(object_path)
+dbus.validate_interface(interface_name)
+dbus.validate_member(method_name)
 
 conn = loop.run_until_complete \
   (
