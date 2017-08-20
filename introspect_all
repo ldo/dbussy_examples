@@ -105,6 +105,7 @@ if len(args) != 2 :
     raise getopt.GetoptError("usage: %s session|system «bus-name»" % sys.argv[0])
 #end if
 which_bus, destination = args
+destination = dbus.valid_bus_name(destination)
 
 conn = dbus.Connection.bus_get \
   (
