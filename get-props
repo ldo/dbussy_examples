@@ -47,12 +47,12 @@ conn.attach_asyncio(loop)
 
 request = dbus.Message.new_method_call \
   (
-    destination = destination,
-    path = object_path,
+    destination = dbus.valid_bus_name(destination),
+    path = dbus.valid_path(object_path),
     iface = DBUS.INTERFACE_PROPERTIES,
     method = "GetAll"
   )
-request.append_objects("s", interface_name)
+request.append_objects("s", dbus.valid_interface(interface_name))
 reply = loop.run_until_complete(conn.send_await_reply(request))
 values = reply.expect_return_objects("a{sv}")[0]
 for propname in sorted(values.keys()) :
