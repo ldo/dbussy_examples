@@ -3,12 +3,13 @@
 # DBussy example -- ask the D-Bus daemon for a list of all registered names
 # on a bus. Invoke this script as follows:
 #
-#     list_bus_names_blocking [--activatable] [--owners] [--unique]
+#     list_bus_names_blocking [--activatable] [--owners] [--unique] session|system
 #
 # where --activatable specifies you want a list of activatable (as opposed
 # to active) names, --owners shows the unique bus names owning the names,
 # and --unique means you want the unique names (beginning with a colon
 # and assigned by the D-Bus daemon) as opposed to the requested names.
+# The single argument is the bus for which to list the names.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
