@@ -39,8 +39,8 @@ conn = dbus.Connection.bus_get \
 conn.attach_asyncio(loop)
 message = dbus.Message.new_method_call \
   (
-    destination = sys.argv[2],
-    path = sys.argv[3],
+    destination = dbus.valid_bus_name(sys.argv[2]),
+    path = dbus.valid_path(sys.argv[3]),
     iface = DBUS.INTERFACE_INTROSPECTABLE,
     method = "Introspect"
   )
