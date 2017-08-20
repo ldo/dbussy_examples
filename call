@@ -13,6 +13,13 @@
 # argument types must match the method signature (obtained via
 # instrospection), otherwise an error is raised.
 #
+# Example: bring up a desktop notification for 5000 milliseconds
+# (5 seconds):
+#
+#     call --json session org.freedesktop.Notifications /org/freedesktop/Notifications \
+#         org.freedesktop.Notifications Notify '"Test"' 1 '""' '"Greetings"' \
+#         '"Hello Freedesktop World!"' '[]' '{}' 5000
+#
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
