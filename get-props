@@ -5,15 +5,14 @@
 #
 #     get-props session|system «bus_name» «path» «interface»
 #
-# For example, you can get info about your current login with
+# For example, you can get info about your current login with the commands
 #
 #     get-props system org.freedesktop.login1 /org/freedesktop/login1/session/self \
 #         org.freedesktop.login1.Session
-#
-# and
-#
 #     get-props system org.freedesktop.login1 /org/freedesktop/login1/seat/self \
 #         org.freedesktop.login1.Seat
+#     get-props system org.freedesktop.login1 /org/freedesktop/login1/user/self \
+#         org.freedesktop.login1.User
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
