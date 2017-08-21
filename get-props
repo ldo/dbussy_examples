@@ -5,7 +5,13 @@
 #
 #     get-props session|system «bus_name» «path» «interface»
 #
-# For example, you can get info about your current login with the commands
+# For example, you can get info about your machine hostname with the
+# command
+#
+#     get-props system org.freedesktop.hostname1 /org/freedesktop/hostname1 \
+#         org.freedesktop.hostname1
+#
+# and you can get info about your current login with the commands
 #
 #     get-props system org.freedesktop.login1 /org/freedesktop/login1/session/self \
 #         org.freedesktop.login1.Session
