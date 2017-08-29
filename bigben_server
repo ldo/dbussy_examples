@@ -3,7 +3,8 @@
 # DBussy example -- a server which chimes every “hour”. For demonstration
 # purposes, an “hour” goes by much faster than real time. The server
 # sends a periodic chime signal on the session bus, and also responds
-# to requests for its idea of the current time.
+# to requests for its idea of the current time, and to delay the caller
+# until the next chime.
 #
 # Loosely inspired by this Twitter account <https://twitter.com/big_ben_clock>.
 #
@@ -34,9 +35,10 @@ loop = asyncio.get_event_loop()
 nr_hours = 12
 seconds_per_hour = 15 # do you dare set this to the right value?
 nr_chimes = 0 # to begin with
+awaiting_chime = None
 
 async def chimer() :
-    global nr_chimes
+    global nr_chimes, awaiting_chime
     first = True
     while True :
         hour = time.time() % (nr_hours * seconds_per_hour) / seconds_per_hour
@@ -53,6 +55,10 @@ async def chimer() :
               )
             message.append_objects("as", ["BONG!"] * nr_chimes)
             conn.send(message)
+            if awaiting_chime != None and not awaiting_chime.done() :
+                awaiting_chime.set_result(None)
+                awaiting_chime = None
+            #end if
         #end if
         delay = (math.ceil(hour) - hour) * seconds_per_hour
         if not first and delay == 0 :
@@ -105,6 +111,15 @@ async def handle_whats_the_time(conn, message, args, user_data) :
     conn.send(reply)
 #end handle_whats_the_time
 
+async def handle_await_chime(conn, message, args, user_data) :
+    global awaiting_chime
+    if awaiting_chime == None or awaiting_chime.done() :
+        awaiting_chime = loop.create_future()
+    #end if
+    await awaiting_chime
+    conn.send(message.new_method_return())
+#end handle_await_chime
+
 async def handle_stop(conn, message, args, user_data) :
     loop.stop()
     conn.send(message.new_method_return())
@@ -113,6 +128,7 @@ async def handle_stop(conn, message, args, user_data) :
 methods = \
     {
         "whats_the_time" : handle_whats_the_time,
+        "await_chime" : handle_await_chime,
         "stop" : handle_stop,
     }
 

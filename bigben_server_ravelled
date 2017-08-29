@@ -3,7 +3,8 @@
 # DBussy example -- a server which chimes every “hour”. For demonstration
 # purposes, an “hour” goes by much faster than real time. The server
 # sends a periodic chime signal on the session bus, and also responds
-# to requests for its idea of the current time.
+# to requests for its idea of the current time, and to delay the caller
+# until the next chime.
 #
 # This version uses the ravel higher-level API.
 #
@@ -35,9 +36,10 @@ loop = asyncio.get_event_loop()
 nr_hours = 12
 seconds_per_hour = 15 # do you dare set this to the right value?
 nr_chimes = 0 # to begin with
+awaiting_chime = None
 
 async def chimer() :
-    global nr_chimes
+    global nr_chimes, awaiting_chime
     first = True
     while True :
         hour = time.time() % (nr_hours * seconds_per_hour) / seconds_per_hour
@@ -53,6 +55,10 @@ async def chimer() :
                 name = "chime",
                 args = [["BONG!"] * nr_chimes]
               )
+            if awaiting_chime != None and not awaiting_chime.done() :
+                awaiting_chime.set_result(None)
+                awaiting_chime = None
+            #end if
         #end if
         delay = (math.ceil(hour) - hour) * seconds_per_hour
         if not first and delay == 0 :
@@ -100,6 +106,22 @@ class BigBen :
             ]
           )
     #end handle_whats_the_time
+
+    @ravel.method \
+      (
+        name = "await_chime",
+        in_signature = "",
+        out_signature = ""
+      )
+    async def handle_await_chime(self) :
+        global awaiting_chime
+        if awaiting_chime == None or awaiting_chime.done() :
+            awaiting_chime = loop.create_future()
+        #end if
+        await awaiting_chime
+        return \
+            []
+    #end handle_await_chime
 
     @ravel.signal(name = "chime", in_signature = "as")
     def chime_dummy(self) : pass
