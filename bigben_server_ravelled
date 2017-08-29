@@ -76,7 +76,7 @@ class BigBen :
         in_signature = "",
         out_signature = "s"
       )
-    async def handle_whats_the_time(self) :
+    def handle_whats_the_time(self) :
         return \
           (
             [
