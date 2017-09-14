@@ -45,7 +45,7 @@ if len(sys.argv) < 2 :
 bus_spec = sys.argv[1]
 match_rules = sys.argv[2:]
 
-conn = conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()], private = False)
+conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()], private = False)
 conn.attach_asyncio(loop)
 conn.add_filter(message_filter, None)
 if len(match_rules) != 0 :

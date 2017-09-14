@@ -39,7 +39,7 @@ if len(sys.argv) != 2 :
     raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
 #end if
 
-conn = conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()], private = False)
+conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()], private = False)
 conn.add_filter(message_filter, None)
 conn.bus_add_match("type='signal'")
 while conn.read_write_dispatch() :
