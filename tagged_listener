@@ -1,0 +1,129 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- listen for messages and dispatch to corresponding
+# action handlers using its filtering APIs. Call this script as follows:
+#
+#      tagged_listener --bus=session|system «rule1» «msg1» [«rule2» «msg2» ...]
+#
+# where the arguments are a succession of rule/message pairs. Each
+# rule is a D-Bus filter rule string, and the corresponding message string
+# will be output when a D-Bus message matching that filter is seen.
+# The message string takes the form of a Python %-format string which
+# can contain named string placeholders that will be substituted with
+# the appropriate information from the D-Bus message. For example, an
+# invocation like
+#
+#     tagged_listener --bus=session type=method_call,eavesdrop=true \
+#         "%(typestr)s from %(sender)s to %(destination)s: %(interface)s.%(member)s[%(path)s]%(args)s"
+#
+# will report on all method calls on the session bus, indicating their
+# source, destination and some other details.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+loop = asyncio.get_event_loop()
+
+#+
+# Callbacks
+#-
+
+def message_action(connection, message, tag) :
+    sys.stdout.write \
+      (
+            tag
+        %
+            {
+                "type" : message.type,
+                "typestr" : dbus.Message.type_to_string(message.type),
+                "serial" : message.serial,
+                "sender" : repr(message.sender),
+                "destination" : repr(message.destination),
+                "path" : repr(message.path),
+                "interface" : ("(none)", message.interface)[message.interface != None],
+                "member" : ("(none)", message.member)[message.member != None],
+                "error_name" : ("(none)", message.error_name)[message.error_name != None],
+                "args" : repr(list(message.objects)),
+            }
+      )
+    sys.stdout.write("\n")
+    return \
+        DBUS.HANDLER_RESULT_NOT_YET_HANDLED
+#end message_action
+
+#+
+# Mainline
+#-
+
+bus_type = None
+opts, args = getopt.getopt \
+  (
+    sys.argv[1:],
+    "",
+    ["bus="]
+  )
+for keyword, value in opts :
+    if keyword == "--bus" :
+        bus_type = {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[value.lower()]
+    #end if
+#end for
+if bus_type == None :
+    raise getopt.GetoptError("forgot to specify --bus={session,system}")
+#end if
+if len(args) == 0 :
+    raise getopt.GetoptError("nothing to listen for")
+#end if
+if len(args) % 2 != 0 :
+    raise getopt.GetoptError("usage: %s «rule1» «msg1» [«rule2» «msg2» ...]" % sys.argv[0])
+#end if
+conn = loop.run_until_complete(dbus.Connection.bus_get_async(bus_type, private = True))
+sys.stdout.write("My unique name = %s\n" % repr(conn.bus_unique_name))
+matches = []
+rule = None
+for arg in args :
+    if rule == None :
+        rule = arg
+    else :
+        tag = arg
+        sys.stderr.write("rule %s => tag %s\n" % (repr(rule), repr(tag))) # debug
+        loop.run_until_complete \
+          (
+            conn.bus_add_match_action_async
+              (
+                rule = rule,
+                func = message_action,
+                user_data = tag
+              )
+          )
+        matches.append((rule, tag))
+        rule = None
+    #end if
+#end for
+
+try :
+    loop.run_forever()
+except KeyboardInterrupt :
+    pass
+#end try
+
+for rule, tag in matches :
+    loop.run_until_complete \
+      (
+        conn.bus_remove_match_action_async
+          (
+            rule = rule,
+            func = message_action,
+            user_data = tag
+          )
+      )
+#end for
