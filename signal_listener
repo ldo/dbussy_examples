@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 #+
 # DBussy example -- listen for signals on D-Bus using the asyncio event loop.
-# This version also allows the specification of custom filter rules.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
@@ -23,14 +22,19 @@ loop = asyncio.get_event_loop()
 #-
 
 def message_filter(connection, message, data) :
-    sys.stdout.write("filter got a message, type %s(%d), serial = %d, sig = %s\n" % (message.type_to_string(message.type), message.type, message.serial, repr(message.signature)))
-    if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
-        sys.stdout.write(" destination = %s\n" % repr(message.destination))
+    if message.type == DBUS.MESSAGE_TYPE_SIGNAL :
+        sys.stdout.write \
+          (
+                "%s.%s[%s](%s)\n"
+            %
+                (
+                    message.interface,
+                    message.member,
+                    repr(message.path),
+                    ", ".join(repr(arg) for arg in message.objects)
+                )
+          )
     #end if
-    if message.type in (DBUS.MESSAGE_TYPE_METHOD_CALL, DBUS.MESSAGE_TYPE_SIGNAL) :
-        sys.stdout.write(" path = %s, interface = %s, name = %s\n" % (repr(message.path), repr(message.interface), repr(message.member)))
-    #end if
-    sys.stdout.write(" contents = %s\n" % repr(message.all_objects))
     return \
         DBUS.HANDLER_RESULT_HANDLED
 #end message_filter
@@ -39,20 +43,17 @@ def message_filter(connection, message, data) :
 # Mainline
 #-
 
-if len(sys.argv) < 2 :
+if len(sys.argv) != 2 :
     raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
 #end if
 bus_spec = sys.argv[1]
-match_rules = sys.argv[2:]
 
-conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()], private = False)
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()],
+    private = False
+  )
 conn.attach_asyncio(loop)
 conn.add_filter(message_filter, None)
-if len(match_rules) != 0 :
-    for rule in match_rules :
-        conn.bus_add_match(rule)
-    #end for
-else :
-    conn.bus_add_match("type=signal")
-#end if
+conn.bus_add_match("type=signal")
 loop.run_forever()

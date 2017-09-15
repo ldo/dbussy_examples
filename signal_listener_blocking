@@ -19,14 +19,19 @@ from dbussy import \
 #-
 
 def message_filter(connection, message, data) :
-    sys.stdout.write("filter got a message, type %s(%d), serial = %d, sig = %s\n" % (message.type_to_string(message.type), message.type, message.serial, repr(message.signature)))
-    if message.type == DBUS.MESSAGE_TYPE_METHOD_CALL :
-        sys.stdout.write(" destination = %s\n" % repr(message.destination))
+    if message.type == DBUS.MESSAGE_TYPE_SIGNAL :
+        sys.stdout.write \
+          (
+                "%s.%s[%s](%s)\n"
+            %
+                (
+                    message.interface,
+                    message.member,
+                    repr(message.path),
+                    ", ".join(repr(arg) for arg in message.objects)
+                )
+          )
     #end if
-    if message.type in (DBUS.MESSAGE_TYPE_METHOD_CALL, DBUS.MESSAGE_TYPE_SIGNAL) :
-        sys.stdout.write(" path = %s, interface = %s, name = %s\n" % (repr(message.path), repr(message.interface), repr(message.member)))
-    #end if
-    sys.stdout.write(" contents = %s\n" % repr(message.all_objects))
     return \
         DBUS.HANDLER_RESULT_HANDLED
 #end message_filter
@@ -38,10 +43,15 @@ def message_filter(connection, message, data) :
 if len(sys.argv) != 2 :
     raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
 #end if
+bus_spec = sys.argv[1]
 
-conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()], private = False)
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()],
+    private = False
+  )
 conn.add_filter(message_filter, None)
-conn.bus_add_match("type='signal'")
+conn.bus_add_match("type=signal")
 # Danger! Blocking the thread really does block the thread, so it won’t
 # even respond to CTRL/C, at least until the timeout expires. Set a short
 # timeout for this reason:
