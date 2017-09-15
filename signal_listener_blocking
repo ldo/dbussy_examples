@@ -42,6 +42,9 @@ if len(sys.argv) != 2 :
 conn = dbus.Connection.bus_get({"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()], private = False)
 conn.add_filter(message_filter, None)
 conn.bus_add_match("type='signal'")
-while conn.read_write_dispatch() :
+# Danger! Blocking the thread really does block the thread, so it won’t
+# even respond to CTRL/C, at least until the timeout expires. Set a short
+# timeout for this reason:
+while conn.read_write_dispatch(timeout = 0.25) :
     pass
 #end while
