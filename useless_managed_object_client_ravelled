@@ -1,0 +1,195 @@
+#!/usr/bin/python3
+#+
+# DBussy/Ravel example -- a client-side process for exercising the
+# object-selection, property and managed-objects mechanisms. Run this
+# after starting the accompanying useless_managed_object_server_xxx
+# script and observe the messages that are printed.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import time
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+useless_managed_objects_bus_name = "com.example.useless_managed_objects"
+useless_managed_objects_iface_name = "com.example.useless_managed_objects"
+
+start_time = time.time()
+loop = asyncio.get_event_loop()
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+
+def event_time() :
+    "time relative to the start of the script run."
+    return \
+        time.time() - start_time
+#end event_time
+
+def log_msg(msg) :
+    "prints a message line with a timestamp prefix."
+    now = event_time()
+    sys.stdout.write("%05.1f: %s\n" % (now, msg))
+#end log_msg
+
+async def sleep_till(when) :
+    "delays a task until a specified time relative to the" \
+    " start of the script run."
+    delay = when - event_time()
+    if delay >= 0 :
+        await asyncio.sleep(delay)
+    #end if
+#end sleep_till
+
+#+
+# Interface
+#-
+
+@ravel.signal \
+  (
+    name = "prop_changed",
+    path_keyword = "object_path",
+    in_signature = "sa{sv}as",
+    arg_keys = ("interface_name", "changed_properties", "invalidated_properties")
+  )
+def obj_prop_changed(object_path, interface_name, changed_properties, invalidated_properties) :
+    "reports on changes to useless_managed_object properties."
+    if interface_name == useless_managed_objects_iface_name :
+        log_msg("prop changed on %s %s %s" % (object_path, repr(changed_properties), repr(invalidated_properties)))
+    #end if
+#end obj_prop_changed
+
+@ravel.signal \
+  (
+    name = "object_added",
+    in_signature = "oa{sa{sv}}",
+    path_keyword = "object_path",
+    args_keyword = "args",
+  )
+def objects_added(object_path, args) :
+    log_msg("signal received: object “%s” added: %s" % (object_path, repr(args)))
+#end objects_added
+
+@ravel.signal \
+  (
+    name = "objects_removed",
+    in_signature = "oas",
+    path_keyword = "object_path",
+    args_keyword = "args",
+  )
+def objects_removed(object_path, args) :
+    log_msg("signal received: object “%s” removed: %s" % (object_path, repr(args)))
+#end objects_removed
+
+bus.listen_propchanged \
+  (
+    path = "/",
+    fallback = True,
+    interface = useless_managed_objects_iface_name,
+    func = obj_prop_changed
+  )
+bus.listen_objects_added \
+  (
+    func = objects_added
+  )
+bus.listen_objects_removed \
+  (
+    func = objects_removed
+  )
+server = loop.run_until_complete \
+  (
+    bus.get_proxy_interface_async
+      (
+        destination = useless_managed_objects_bus_name,
+        path = "/",
+        interface = useless_managed_objects_iface_name,
+      )
+  )
+server = server(connection = bus.connection, dest = useless_managed_objects_bus_name)
+  # only need one instance
+
+#+
+# Mainline
+#-
+
+async def create_object_if(path, initial) :
+    "tries to create an object at the specified path, recovering gracefully" \
+    " if it already exists."
+    try :
+        await server[path].create(initial)
+    except dbus.DBusError as err :
+        if err.name != DBUS.ERROR_OBJECT_PATH_IN_USE :
+            raise
+        #end if
+        log_msg("object %s already exists" % path)
+    #end try
+#end create_object_if
+
+async def report_time_props(path) :
+    "reports the various time properties associated with an object."
+    obj = server[path]
+    log_msg \
+      (
+            "%s create = %05.1f, modify = %05.1f, access = %05.1f"
+        %
+            (
+                path,
+                (await obj.create_time) - start_time,
+                (await obj.modify_time) - start_time,
+                (await obj.access_time) - start_time,
+            )
+      )
+#end report_time_props
+
+async def actions() :
+    log_msg("starting script")
+    await sleep_till(3)
+    await create_object_if("/path1", "val1")
+    await sleep_till(4)
+    server["/path1"].value = "val1a"
+    await server.set_prop_flush()
+    await sleep_till(6)
+    await create_object_if("/path2", "val2")
+    await report_time_props("/path1")
+    log_msg \
+      (
+            "/path2 value = %s"
+        %
+            repr(await server["/path1"].value)
+      )
+    await report_time_props("/path2")
+    await sleep_till(8)
+    await server["/path1"].delete()
+    await sleep_till(9)
+    await create_object_if("/path3", "val3")
+    server["/path2"].value = "val2a"
+    await server.set_prop_flush()
+    await sleep_till(11)
+    await server["/path2"].delete()
+    await sleep_till(14)
+    await server["/path3"].delete()
+    await sleep_till(18)
+    log_msg("finishing script")
+#end actions
+
+try :
+    loop.run_until_complete(actions())
+except KeyboardInterrupt :
+    # is there an easier way of cleaning up than this?
+    for task in asyncio.Task.all_tasks(loop) :
+        task.cancel()
+        try :
+            loop.run_until_complete(task)
+        except asyncio.CancelledError :
+            pass
+        #end try
+    #end for
+    print() # avoid terminal prompt appearing after ^C
+#end try

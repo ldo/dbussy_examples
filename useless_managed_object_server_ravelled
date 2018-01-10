@@ -1,0 +1,243 @@
+#!/usr/bin/python3
+#+
+# DBussy/Ravel example -- a server process for exercising the
+# object-selection, property and managed-objects mechanisms. Run the
+# accompanying useless_managed_object_client_xxx against this server
+# and observe the interaction. You can also run a separate
+# signal-listener program to observe the events being reported by the
+# server.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import time
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+useless_managed_objects_bus_name = "com.example.useless_managed_objects"
+useless_managed_objects_iface_name = "com.example.useless_managed_objects"
+
+loop = asyncio.get_event_loop()
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+
+#+
+# Custom object info
+#-
+
+class UselessObject :
+    "user-data object that keeps track of custom object properties."
+
+    __slots__ = ("create_time", "modify_time", "access_time", "_value")
+
+    def __init__(self, initial) :
+        self.create_time = time.time()
+        self.modify_time = self.create_time
+        self.access_time = self.create_time
+        self._value = initial
+    #end __init
+
+    @property
+    def value(self) :
+        self.access_time = time.time()
+        return \
+            self._value
+    #end value
+
+    @value.setter
+    def value(self, newnum) :
+        self._value = newnum
+        self.modify_time = time.time()
+    #end value
+
+#end UselessObject
+
+#+
+# Interface
+#-
+
+@ravel.interface(ravel.INTERFACE.SERVER, name = useless_managed_objects_iface_name)
+class UselessObjectServer :
+
+    __slots__ = ("bus",)
+
+    def __init__(self, bus) :
+        self.bus = bus
+    #end __init__
+
+    @ravel.method \
+      (
+        name = "create",
+        in_signature = [dbus.BasicType(dbus.TYPE.STRING)],
+        out_signature = "",
+        path_keyword = "object_path",
+        arg_keys = ["initial_value"],
+      )
+    def create_object(self, object_path, initial_value) :
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name in node :
+            raise ravel.ErrorReturn(DBUS.ERROR_OBJECT_PATH_IN_USE, "object already exists")
+        #end if
+        node[useless_managed_objects_iface_name] = UselessObject(initial_value)
+        self.bus.object_added(object_path, {useless_managed_objects_iface_name : None})
+        return \
+            []
+    #end create_object
+
+    @ravel.method \
+      (
+        name = "delete",
+        in_signature = [],
+        out_signature = "",
+        path_keyword = "object_path",
+      )
+    def delete_object(self, object_path) :
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name in node :
+            del node[useless_managed_objects_iface_name]
+            self.bus.object_removed(object_path, [useless_managed_objects_iface_name])
+        #end if
+        return \
+            []
+    #end delete_object
+
+    @ravel.propgetter \
+      (
+        name = "value",
+        type = dbus.BasicType(dbus.TYPE.STRING),
+        path_keyword = "object_path",
+        change_notification = dbus.Introspection.PROP_CHANGE_NOTIFICATION.NEW_VALUE,
+      )
+    def get_value(self, object_path) :
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name not in node :
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+        #end if
+        value = node[useless_managed_objects_iface_name].value
+        return \
+            value
+    #end get_value
+
+    @ravel.propsetter \
+      (
+        name = "value",
+        type = dbus.BasicType(dbus.TYPE.STRING),
+        path_keyword = "object_path",
+        type_keyword = "new_type",
+        value_keyword = "new_value",
+      )
+    def set_value(self, object_path, new_type, new_value) :
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name not in node :
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+        #end if
+        node[useless_managed_objects_iface_name].value = new_value
+        self.bus.prop_changed \
+          (
+            path = object_path,
+            interface = useless_managed_objects_iface_name,
+            propname = "value",
+            proptype = new_type,
+            propvalue = new_value
+          )
+        self.bus.prop_changed \
+          (
+            path = object_path,
+            interface = useless_managed_objects_iface_name,
+            propname = "modify_time",
+            proptype = None,
+            propvalue = None
+          )
+    #end set_value
+
+    @ravel.propgetter \
+      (
+        name = "create_time",
+        type = dbus.BasicType(dbus.TYPE.UINT64),
+        path_keyword = "object_path",
+        change_notification = dbus.Introspection.PROP_CHANGE_NOTIFICATION.CONST
+      )
+    async def get_create_time(self, object_path) :
+        # This method is defined as a coroutine just to demonstrate it
+        # can be done, to show how a time-consuming service can be
+        # performed in an event-loop-friendly fashion.
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name not in node :
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+        #end if
+        await asyncio.sleep(1) # pretend to take some time to reply
+        return \
+            round(node[useless_managed_objects_iface_name].create_time)
+    #end get_create_time
+
+    @ravel.propgetter \
+      (
+        name = "access_time",
+        type = dbus.BasicType(dbus.TYPE.UINT64),
+        path_keyword = "object_path",
+        change_notification = dbus.Introspection.PROP_CHANGE_NOTIFICATION.NONE
+      )
+    def get_access_time(self, object_path) :
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name not in node :
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+        #end if
+        return \
+            round(node[useless_managed_objects_iface_name].access_time)
+    #end get_access_time
+
+    @ravel.propgetter \
+      (
+        name = "modify_time",
+        type = dbus.BasicType(dbus.TYPE.UINT64),
+        path_keyword = "object_path",
+        change_notification = dbus.Introspection.PROP_CHANGE_NOTIFICATION.INVALIDATES
+      )
+    def get_modify_time(self, object_path) :
+        node = self.bus.user_data[object_path]
+        if useless_managed_objects_iface_name not in node :
+            raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
+        #end if
+        return \
+            round(node[useless_managed_objects_iface_name].modify_time)
+    #end get_modify_time
+
+#end UselessObjectServer
+
+#+
+# Mainline
+#-
+
+bus.request_name \
+  (
+    bus_name = useless_managed_objects_bus_name,
+    flags = DBUS.NAME_FLAG_DO_NOT_QUEUE
+  )
+bus.register \
+  (
+    path = "/",
+    fallback = True,
+    interface = UselessObjectServer(bus)
+  )
+bus.object_added("/", None)
+try :
+    loop.run_forever()
+except KeyboardInterrupt :
+    # is there an easier way of cleaning up than this?
+    for task in asyncio.Task.all_tasks(loop) :
+        task.cancel()
+        try :
+            loop.run_until_complete(task)
+        except asyncio.CancelledError :
+            pass
+        #end try
+    #end for
+    print() # avoid terminal prompt appearing after ^C
+#end try
+bus = None
