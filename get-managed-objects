@@ -1,0 +1,65 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- obtain all managed objects from a bus peer. Invoke
+# this script as follows:
+#
+#     get-managed-objects session|system «bus_name»
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS, \
+    DBUSX
+
+#+
+# Mainline
+#-
+
+loop = asyncio.get_event_loop()
+
+if len(sys.argv) != 3 :
+    raise getopt.GetoptError("usage: %s session|system «bus-name»" % sys.argv[0])
+#end if
+which_bus, destination = sys.argv[1:]
+
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[which_bus.lower()],
+    private = False
+  )
+conn.attach_asyncio(loop)
+
+request = dbus.Message.new_method_call \
+  (
+    destination = dbus.valid_bus_name(destination),
+    path = "/",
+    iface = DBUSX.INTERFACE_OBJECT_MANAGER,
+    method = "GetManagedObjects"
+  )
+reply = loop.run_until_complete(conn.send_await_reply(request))
+objs = reply.expect_return_objects("a{oa{sa{sv}}}")[0]
+if len(objs) != 0 :
+    for pathname in sorted(objs.keys()) :
+        sys.stdout.write("* %s:\n" % pathname)
+        entry = objs[pathname]
+        for interface in sorted(entry.keys()) :
+            sys.stdout.write(" - %s:\n" % interface)
+            props = entry[interface]
+            for propname in sorted(props.keys()) :
+                proptype, propvalue = props[propname]
+                sys.stdout.write("    %s(%s) = %s\n" % (propname, proptype, repr(propvalue)))
+            #end for
+        #end for
+    #end for
+else :
+    sys.stdout.write("(nothing)\n")
+#end if
+
