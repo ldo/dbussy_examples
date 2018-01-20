@@ -24,7 +24,7 @@ useless_managed_objects_bus_name = "com.example.useless_managed_objects"
 useless_managed_objects_iface_name = "com.example.useless_managed_objects"
 
 loop = asyncio.get_event_loop()
-bus = ravel.session_bus()
+bus = ravel.session_bus(managed_objects = True)
 bus.attach_asyncio(loop)
 
 #+
@@ -85,7 +85,7 @@ class UselessObjectServer :
             raise ravel.ErrorReturn(DBUS.ERROR_OBJECT_PATH_IN_USE, "object already exists")
         #end if
         node[useless_managed_objects_iface_name] = UselessObject(initial_value)
-        self.bus.object_added(object_path, {useless_managed_objects_iface_name : None})
+        self.bus.object_added(object_path)
         return \
             []
     #end create_object
@@ -101,7 +101,7 @@ class UselessObjectServer :
         node = self.bus.user_data[object_path]
         if useless_managed_objects_iface_name in node :
             del node[useless_managed_objects_iface_name]
-            self.bus.object_removed(object_path, [useless_managed_objects_iface_name])
+            self.bus.object_removed(object_path)
         #end if
         return \
             []
@@ -225,7 +225,7 @@ bus.register \
     fallback = True,
     interface = UselessObjectServer(bus)
   )
-bus.object_added("/", None)
+
 try :
     loop.run_forever()
 except KeyboardInterrupt :
