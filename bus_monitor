@@ -1,0 +1,55 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- monitor bus messages using the “BecomeMonitor” API.
+# This is the new, recommended way to monitor messages on the bus, in
+# place of the now-deprecated eavesdropping rules.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+loop = asyncio.get_event_loop()
+
+#+
+# Mainline
+#-
+
+def handle_message(conn, message, _) :
+    sys.stdout.write \
+      (
+            "%s: %s.%s[%s](%s)\n"
+        %
+            (
+                dbus.Message.type_to_string(message.type),
+                message.interface,
+                message.member,
+                repr(message.path),
+                ", ".join(repr(arg) for arg in message.objects)
+            )
+      )
+    return \
+        DBUS.HANDLER_RESULT_HANDLED
+#end handle_message
+
+args = sys.argv[1:]
+if len(args) == 0 :
+    raise getopt.GetoptError("usage: %s session|system [«rule»...]" % sys.argv[0])
+#end if
+conn = dbus.Connection.bus_get \
+  (
+    {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[args[0].lower()],
+    private = False
+  )
+conn.attach_asyncio(loop)
+conn.add_filter(handle_message, None)
+conn.become_monitor(args[1:])
+loop.run_forever()
