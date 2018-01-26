@@ -1,0 +1,157 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- how to construct a proxy interface using entirely
+# local information, without the overhead of actually introspecting
+# the bus peer. Invoke this script as follows:
+#
+#    notify [«opts»] «summary» [«body»]
+#
+# where «summary» is the message summary text, and «body» is the optional
+# more detailed message body text (defaults to the empty string if omitted).
+# Valid «opts» are:
+#
+#     --app-icon=«icon-name»
+#        The name of the icon to show. Try names from here:
+#        <https://specifications.freedesktop.org/icon-naming-spec/latest/ar01s04.html>.
+#        If omitted, defaults to “dialog-information”.
+#     --app-name=«app-name»
+#        the name to specify for the application. Doesn’t appear in the
+#        notification on my KDE system, but perhaps it shows elsewhere.
+#     --timeout=«seconds»
+#        how many seconds to show the notification for. If omitted,
+#        defaults to 5.0.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+loop = asyncio.get_event_loop()
+
+#+
+# Interface definition
+#-
+
+# The following XML is copied out of an actual introspection on a KDE
+# system. This is converted to a more Pythonic dbussy.Introspection
+# tree below, which is the format expected by other calls, such as
+# ravel.def_proxy_interface(). But it is easy to go back and forth
+# between the two formats. I could have substituted the equivalent
+# dbussy.Introspection expression here (and saved the parse call), but
+# I am using standard D-Bus XML instead because that is what is more
+# likely to be available from other sources (e.g. published
+# application information, and of course the D-Bus introspection
+# mechanism itself).
+notifications_xml = \
+"""<node>
+  <interface name="org.freedesktop.Notifications">
+    <signal name="NotificationClosed">
+      <arg direction="out" type="u" name="id"/>
+      <arg direction="out" type="u" name="reason"/>
+    </signal>
+    <signal name="ActionInvoked">
+      <arg direction="out" type="u" name="id"/>
+      <arg direction="out" type="s" name="action_key"/>
+    </signal>
+    <method name="Notify">
+      <arg direction="out" type="u"/>
+      <arg direction="in" type="s" name="app_name"/>
+      <arg direction="in" type="u" name="replaces_id"/>
+      <arg direction="in" type="s" name="app_icon"/>
+      <arg direction="in" type="s" name="summary"/>
+      <arg direction="in" type="s" name="body"/>
+      <arg direction="in" type="as" name="actions"/>
+      <arg direction="in" type="a{sv}" name="hints"/>
+      <arg direction="in" type="i" name="timeout"/>
+    </method>
+    <method name="CloseNotification">
+      <arg direction="in" type="u" name="id"/>
+    </method>
+    <method name="GetCapabilities">
+      <arg direction="out" type="as" name="caps"/>
+    </method>
+    <method name="GetServerInformation">
+      <arg direction="out" type="s" name="name"/>
+      <arg direction="out" type="s" name="vendor"/>
+      <arg direction="out" type="s" name="version"/>
+      <arg direction="out" type="s" name="spec_version"/>
+    </method>
+  </interface>
+</node>
+"""
+notifications_bus_name = "org.freedesktop.Notifications"
+notifications_object_path = "/org/freedesktop/Notifications"
+notifications_interface_name = "org.freedesktop.Notifications"
+notifications_introspection = \
+    dbus.Introspection.parse(notifications_xml).interfaces_by_name[notifications_interface_name]
+    # convert to my more Pythonic format, and pull out just the relevant
+    # interface definition
+
+#+
+# Mainline
+#-
+
+async def mainline() :
+    app_name = "DBussy Test"
+    app_icon = "dialog-information"
+    timeout = 5
+    opts, args = getopt.getopt \
+      (
+        sys.argv[1:],
+        "",
+        ["app-icon=", "app-name=", "timeout="]
+      )
+    if len(args) not in (1, 2) :
+        raise getopt.GetoptError("need one or two args, the summary and the message body")
+    #end if
+    summary = args[0]
+    body = ""
+    if len(args) > 1 :
+        body = args[1]
+    #end if
+    for keyword, value in opts :
+        if keyword == "--app-icon" :
+            app_icon = value
+        elif keyword == "--app-name" :
+            app_name = value
+        elif keyword == "--timeout" :
+            timeout = float(value)
+            assert timeout >= 0
+        #end if
+    #end for
+
+    conn = await dbus.Connection.bus_get_async(DBUS.BUS_SESSION, private = False)
+    notifications_proxy = ravel.def_proxy_interface \
+      (
+        ravel.INTERFACE.CLIENT,
+        name = None, # take from interface name
+        introspected = notifications_introspection,
+        is_async = True
+      )
+    notifications_object = \
+        notifications_proxy(connection = conn, dest = notifications_bus_name) \
+            [notifications_object_path]
+    await notifications_object \
+        .Notify \
+          (
+            app_name = app_name,
+            replaces_id = 0,
+            app_icon = app_icon,
+            summary = summary,
+            body = body,
+            actions = [],
+            hints = {},
+            timeout = round(timeout * 1000),
+          )
+#end mainline
+
+loop.run_until_complete(mainline())
