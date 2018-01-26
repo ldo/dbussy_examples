@@ -91,8 +91,6 @@ class UselessObjectServer :
             name = "object_created",
             args = ()
           )
-        return \
-            []
     #end create_object
 
     @ravel.method \
@@ -114,8 +112,6 @@ class UselessObjectServer :
                 args = ()
               )
         #end if
-        return \
-            []
     #end delete_object
 
     @ravel.propgetter \

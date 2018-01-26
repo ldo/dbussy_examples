@@ -86,8 +86,6 @@ class UselessObjectServer :
         #end if
         node[useless_managed_objects_iface_name] = UselessObject(initial_value)
         self.bus.object_added(object_path)
-        return \
-            []
     #end create_object
 
     @ravel.method \
@@ -103,8 +101,6 @@ class UselessObjectServer :
             del node[useless_managed_objects_iface_name]
             self.bus.object_removed(object_path)
         #end if
-        return \
-            []
     #end delete_object
 
     @ravel.propgetter \
