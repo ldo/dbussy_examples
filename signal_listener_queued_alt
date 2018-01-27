@@ -1,0 +1,51 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- listen for signals on D-Bus using the asyncio event loop.
+# This version uses the message receive queue with an async-for construct.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+
+loop = asyncio.get_event_loop()
+
+if len(sys.argv) != 2 :
+    raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])
+#end if
+bus_spec = sys.argv[1]
+
+async def mainline() :
+    conn = await dbus.Connection.bus_get_async \
+      (
+        {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()],
+        private = False,
+        loop = loop
+      )
+    conn.enable_receive_message({DBUS.MESSAGE_TYPE_SIGNAL})
+    conn.bus_add_match("type=signal")
+    async for message in conn.iter_messages_async() :
+        sys.stdout.write \
+          (
+                "%s.%s[%s](%s)\n"
+            %
+                (
+                    message.interface,
+                    message.member,
+                    repr(message.path),
+                    ", ".join(repr(arg) for arg in message.objects)
+                )
+          )
+    #end for
+#end mainline
+
+loop.create_task(mainline())
+loop.run_forever()
