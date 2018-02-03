@@ -215,19 +215,17 @@ class UselessObjectServer :
             round(node[useless_objects_iface_name].modify_time)
     #end get_modify_time
 
-    @ravel.signal \
+    object_created = ravel.def_signal_stub \
       (
         name = "object_created",
         in_signature = [],
       )
-    def object_created(self) : pass
 
-    @ravel.signal \
+    object_deleted = ravel.def_signal_stub \
       (
         name = "object_deleted",
         in_signature = [],
       )
-    def object_deleted(self) : pass
 
 #end UselessObjectServer
 
