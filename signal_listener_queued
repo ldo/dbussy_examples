@@ -48,5 +48,6 @@ async def mainline() :
     #end while
 #end mainline
 
-loop.create_task(mainline())
+main_task = loop.create_task(mainline())
+  # need to keep a reference
 loop.run_forever()

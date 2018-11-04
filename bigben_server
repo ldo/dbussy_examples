@@ -149,7 +149,8 @@ conn.register_fallback \
       ),
     user_data = None
   )
-loop.create_task(chimer())
+main_task = loop.create_task(chimer())
+  # need to keep a reference
 try :
     loop.run_forever()
 except KeyboardInterrupt :
