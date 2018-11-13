@@ -1,0 +1,69 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- demonstrate how to pass file descriptors
+# over D-Bus. This is the server side, which receives requests
+# to create either a transmit or receive pipe matching a
+# given key value. Two clients specifying the same key can
+# then exchange messages over the pipe. See the accompanying
+# pipe_client script for an example of how to communicate with
+# this server.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import os
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+my_bus_name = "com.example.pipes"
+my_iface_name = "com.example.pipes"
+
+loop = asyncio.get_event_loop()
+
+#+
+# Interface
+#-
+
+pipes = {}
+  # created pipes, indexed by object path
+
+@ravel.interface(ravel.INTERFACE.SERVER, name = my_iface_name)
+class PipeServer :
+
+    @ravel.method \
+      (
+        name = "get",
+        in_signature = "b",
+        out_signature = "h",
+        path_keyword = "path",
+        arg_keys = ("writing",),
+        result_keyword = "result",
+      )
+    def handle_get(self, path, writing, result) :
+        if path not in pipes :
+            sys.stderr.write("Create pipes for %s\n" % repr(path)) # debug
+            read_side, write_side = os.pipe()
+            pipes[path] = (read_side, write_side)
+        #end if
+        result[0] = pipes[path][writing]
+    #end handle_get
+
+#end PipeServer
+
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
+bus.register \
+  (
+    path = "/",
+    fallback = True,
+    interface = PipeServer()
+  )
+loop.run_forever()

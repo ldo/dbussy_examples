@@ -1,0 +1,114 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- demonstrate how to pass file descriptors
+# over D-Bus. This is the client side, which sends requests
+# to the server to create either a transmit or receive pipe
+# matching a given key value. Two clients specifying the
+# same key can then exchange messages over the pipe.
+#
+# Invoke this script as either
+#
+#     pipe_client «path» write «message»
+# or
+#     pipe_client «path» read
+#
+# The “write” form will open the write end of the pipe identified
+# by «path», which must be a valid D-Bus object path, and write
+# the given «message» text to it. The “read” form will open the read
+# end of the pipe identified by «path», and read and display a
+# message written to it.
+#
+# Copyright 2018 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import os
+import asyncio
+import getopt
+from dbussy import \
+    DBUS, \
+    Introspection
+import ravel
+
+my_bus_name = "com.example.pipes"
+my_iface_name = "com.example.pipes"
+
+loop = asyncio.get_event_loop()
+
+#+
+# Server proxy interface
+#-
+
+Server = ravel.def_proxy_interface \
+  (
+    ravel.INTERFACE.CLIENT,
+    name = "Server",
+    introspected =
+        Introspection.Interface
+          (
+            name = my_iface_name,
+            methods =
+                (
+                    Introspection.Interface.Method
+                      (
+                        name = "get",
+                        args =
+                            (
+                                Introspection.Interface.Method.Arg
+                                  (
+                                    name = "writing",
+                                    type = chr(DBUS.TYPE_BOOLEAN),
+                                    direction = Introspection.DIRECTION.IN,
+                                  ),
+                                Introspection.Interface.Method.Arg
+                                  (
+                                    type = chr(DBUS.TYPE_UNIX_FD),
+                                    direction = Introspection.DIRECTION.OUT,
+                                  ),
+                            ),
+                      ),
+                )
+          ),
+    is_async = True
+  )
+
+#+
+# Mainline
+#-
+
+if len(sys.argv) not in (3, 4) :
+    raise getopt.GetoptError("usage: %s «path» read|write [«message»]" % sys.argv[0])
+#end if
+path = sys.argv[1]
+writing = {"read" : False, "write" : True}[sys.argv[2]]
+if len(sys.argv) != 3 + writing :
+    raise getopt.GetoptError("message arg required for write, not read")
+#end if
+if writing :
+    message = sys.argv[3]
+#end if
+
+bus = ravel.session_bus()
+bus.attach_asyncio(loop)
+server = Server \
+  (
+    connection = bus.connection,
+    dest = my_bus_name
+  )
+
+async def mainline() :
+    global message
+    pipe = (await server[path].get(writing = writing))[0]
+    if writing :
+        os.write(pipe, message.encode())
+    else :
+        message = os.read(pipe, 80)
+        sys.stdout.write("message: %s\n" % repr(message))
+    #end if
+    os.close(pipe)
+#end mainline
+
+loop.run_until_complete(mainline())
