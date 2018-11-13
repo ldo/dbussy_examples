@@ -8,9 +8,9 @@
 #
 # Invoke this script as either
 #
-#     pipe_client «path» write «message»
+#     pipe_client_ravelled «path» write «message»
 # or
-#     pipe_client «path» read
+#     pipe_client_ravelled «path» read
 #
 # The “write” form will open the write end of the pipe identified
 # by «path», which must be a valid D-Bus object path, and write
