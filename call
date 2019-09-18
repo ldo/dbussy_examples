@@ -44,15 +44,18 @@ loop = asyncio.get_event_loop()
 
 use_json = False
 signature = None
+expect_reply = True
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["json", "signature="]
+    ["json", "noreply", "signature="]
   )
 for keyword, value in opts :
     if keyword == "--json" :
         use_json = True
+    elif keyword == "--noreply" :
+        expect_reply = False
     elif keyword == "--signature" :
         signature = dbus.unparse_signature(value)
     #end if
@@ -114,6 +117,7 @@ if signature == None :
     #end if
     method = methods[method_name]
     signature = method.in_signature
+    expect_reply = method.expect_reply
 #end if
 
 message = dbus.Message.new_method_call \
@@ -148,8 +152,12 @@ else :
     argobjs = list(sig[i].validate(json.loads(args[i])) for i in range(len(sig)))
 #end if
 message.append_objects(sig, *argobjs)
-reply = loop.run_until_complete \
-  (
-    conn.send_await_reply(message)
-  )
-sys.stdout.write(repr(reply.all_objects) + "\n")
+if expect_reply :
+    reply = loop.run_until_complete \
+      (
+        conn.send_await_reply(message)
+      )
+    sys.stdout.write(repr(reply.all_objects) + "\n")
+else :
+    conn.send(message)
+#end if
