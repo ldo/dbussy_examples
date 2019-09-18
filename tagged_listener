@@ -17,9 +17,11 @@
 #         "%(typestr)s from %(sender)s to %(destination)s: %(interface)s.%(member)s[%(path)s]%(args)s"
 #
 # will report on all method calls on the session bus, indicating their
-# source, destination and some other details.
+# source, destination and some other details. You can also specify one or
+# more “--register=«bus_name»” options to register bus names for receiving
+# method calls.
 #
-# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2017-2019 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
@@ -66,15 +68,18 @@ def message_action(connection, message, tag) :
 #-
 
 bus_type = None
+register_names = []
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["bus="]
+    ["bus=", "register="]
   )
 for keyword, value in opts :
     if keyword == "--bus" :
         bus_type = {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[value.lower()]
+    elif keyword == "--register" :
+        register_names.append(dbus.valid_bus_name(value))
     #end if
 #end for
 if bus_type == None :
@@ -88,6 +93,12 @@ if len(args) % 2 != 0 :
 #end if
 conn = loop.run_until_complete(dbus.Connection.bus_get_async(bus_type, private = True))
 sys.stdout.write("My unique name = %s\n" % repr(conn.bus_unique_name))
+for name in register_names :
+    loop.run_until_complete \
+      (
+        conn.bus_request_name_async(name = name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
+      )
+#end for
 matches = []
 rule = None
 for arg in args :
