@@ -3,7 +3,8 @@
 # DBussy example -- make a method call using an interface at an
 # object path from a bus peer. Invoke this script as follows:
 #
-#     call [--json] session|system «bus_name» «path» «interface» «method» [«args»...]
+#     call [--json] [--signature=«signature»] session|system \
+#         «bus_name» «path» «interface» «method» [«args»...]
 #
 # where «bus_name», «path», «interface» and «method» are the usual
 # parameters for targeting the method-call message, and the rest of
@@ -11,7 +12,8 @@
 # are interpreted as literal strings, unless --json is specified,
 # in which case they are parsed as JSON object definitions. The
 # argument types must match the method signature (obtained via
-# instrospection), otherwise an error is raised.
+# introspection if not specified as «signature»), otherwise an
+# error is raised.
 #
 # Example: bring up a desktop notification for 5000 milliseconds
 # (5 seconds):
@@ -20,7 +22,7 @@
 #         org.freedesktop.Notifications Notify '"Test"' 1 '""' '"Greetings"' \
 #         '"Hello Freedesktop World!"' '[]' '{}' 5000
 #
-# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2017-2019 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
@@ -41,15 +43,18 @@ loop = asyncio.get_event_loop()
 #-
 
 use_json = False
+signature = None
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["json"]
+    ["json", "signature="]
   )
 for keyword, value in opts :
     if keyword == "--json" :
         use_json = True
+    elif keyword == "--signature" :
+        signature = dbus.unparse_signature(value)
     #end if
 #end for
 
@@ -75,38 +80,41 @@ conn = loop.run_until_complete \
       )
   )
 
-message = dbus.Message.new_method_call \
-  (
-    destination = destination,
-    path = object_path,
-    iface = DBUS.INTERFACE_INTROSPECTABLE,
-    method = "Introspect"
-  )
-reply = loop.run_until_complete \
-  (
-    conn.send_await_reply(message)
-  )
-introspection = dbus.Introspection.parse(reply.expect_return_objects("s")[0])
-interfaces = introspection.interfaces_by_name
-if interface_name not in interfaces :
-    raise getopt.GetoptError \
+if signature == None :
+    message = dbus.Message.new_method_call \
       (
-            "bus peer “%s” object “%s” does not understand interface “%s”"
-        %
-            (destination, object_path, interface_name)
+        destination = destination,
+        path = object_path,
+        iface = DBUS.INTERFACE_INTROSPECTABLE,
+        method = "Introspect"
       )
-#end if
-interface = interfaces[interface_name]
-methods = interface.methods_by_name
-if method_name not in methods :
-    raise getopt.GetoptError \
+    reply = loop.run_until_complete \
       (
-            "interface “%s” does not implement method “%s”"
-        %
-            (interface_name, method_name)
+        conn.send_await_reply(message)
       )
+    introspection = dbus.Introspection.parse(reply.expect_return_objects("s")[0])
+    interfaces = introspection.interfaces_by_name
+    if interface_name not in interfaces :
+        raise getopt.GetoptError \
+          (
+                "bus peer “%s” object “%s” does not understand interface “%s”"
+            %
+                (destination, object_path, interface_name)
+          )
+    #end if
+    interface = interfaces[interface_name]
+    methods = interface.methods_by_name
+    if method_name not in methods :
+        raise getopt.GetoptError \
+          (
+                "interface “%s” does not implement method “%s”"
+            %
+                (interface_name, method_name)
+          )
+    #end if
+    method = methods[method_name]
+    signature = method.in_signature
 #end if
-method = methods[method_name]
 
 message = dbus.Message.new_method_call \
   (
@@ -115,7 +123,7 @@ message = dbus.Message.new_method_call \
     iface = interface_name,
     method = method_name
   )
-sig = dbus.parse_signature(method.in_signature)
+sig = dbus.parse_signature(signature)
 if len(sig) != len(args) :
     raise TypeError("wrong nr args, need %d, got %d" % (len(sig), len(args)))
 #end if
