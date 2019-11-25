@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 #+
 # DBussy example -- make an Introspect query to a specified bus object.
-# This version uses the ad-hoc high-level Ravel API with asyncio.
+# This version uses the structured high-level Ravel API with asyncio.
 # Invoke this script as follows:
 #
 #    introspect_ravelled «bus» «bus-name» «obj-path»
