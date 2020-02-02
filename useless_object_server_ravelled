@@ -178,9 +178,11 @@ class UselessObjectServer :
         if useless_objects_iface_name not in node :
             raise ravel.ErrorReturn(DBUS.ERROR_UNKNOWN_OBJECT, "no such object")
         #end if
+        result = round(node[useless_managed_objects_iface_name].create_time)
+          # get result now, in case object disappears during following
         await asyncio.sleep(1) # pretend to take some time to reply
         return \
-            round(node[useless_objects_iface_name].create_time)
+            result
     #end get_create_time
 
     @ravel.propgetter \
