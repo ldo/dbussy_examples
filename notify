@@ -15,8 +15,7 @@
 #        <https://specifications.freedesktop.org/icon-naming-spec/latest/ar01s04.html>.
 #        If omitted, defaults to “dialog-information”.
 #     --app-name=«app-name»
-#        the name to specify for the application. Doesn’t appear in the
-#        notification on my KDE system, but perhaps it shows elsewhere.
+#        the name to specify for the application showing the notification.
 #     --timeout=«seconds»
 #        how many seconds to show the notification for. If omitted,
 #        defaults to 5.0.
