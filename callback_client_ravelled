@@ -89,7 +89,11 @@ async def mainline() :
         iface = server_iface_name,
         method = server_method_name,
       )
-    request.append_objects("sss", use_obj_path, use_iface_name, use_method_name)
+    for arg in (use_obj_path, use_iface_name, use_method_name) :
+        if arg != "" :
+            request.append_objects("s", arg)
+        #end if
+    #end for
     reply = await bus.connection.send_await_reply(request)
     sys.stderr.write("reply.type = %s\n" % dbus.Message.type_to_string(reply.type))
     if reply.type == DBUS.MESSAGE_TYPE_ERROR :
