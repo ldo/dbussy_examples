@@ -61,8 +61,7 @@ class CallbackServer :
             #end if
         #end for
         if validfail.is_set :
-            result = dbus.Error()
-            result.set(validfail.name, validfail.message)
+            result = validfail
         else :
             call = dbus.Message.new_method_call \
               (
