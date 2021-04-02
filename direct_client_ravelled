@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- a client which connects to the corresponding direct_server
+# without going through the D-Bus daemon. Invoke this script as follows:
+#
+#     direct_client_ravelled «n1» «n2»
+#
+# where «n1» and «n2» are two integers. It will send a request to the server
+# to add the integers together, and return the result, which will be printed.
+#
+# Copyright 2021 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import asyncio
+import getopt
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+server_socket_name = "unix:path=/tmp/direct_server_demo"
+server_interface_name = "com.example.direct_server"
+
+loop = asyncio.get_event_loop()
+
+async def mainline(addend, augend) :
+    conn = await ravel.connect_server_async(address = server_socket_name, private = True)
+    sys.stdout.write("connected to server\n")
+    msg = dbus.Message.new_method_call \
+      (
+        destination = "com.example.dontcare", # no D-Bus daemon to care
+        path = "/",
+        iface = server_interface_name,
+        method = "add"
+      ) \
+      .append_objects("ii", addend, augend)
+    reply = await conn.connection.send_await_reply(msg)
+    sys.stdout.write("reply received: %s\n" % repr(reply.all_objects))
+    conn.connection.close()
+#end mainline
+
+opts, args = getopt.getopt \
+  (
+    sys.argv[1:],
+    "",
+    []
+  )
+if len(args) != 2 :
+    raise getopt.GetoptError("expecting 2 args, the numbers to add")
+#end if
+
+loop.run_until_complete(mainline(int(args[0]), int(args[1])))

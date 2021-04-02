@@ -1,0 +1,90 @@
+#!/usr/bin/python3
+#+
+# DBussy example -- a server which accepts direct socket connections
+# not going through the D-Bus daemon. Use the accompanying direct_client
+# script to test requests to this server.
+#
+# Copyright 2021 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import time
+import asyncio
+import dbussy as dbus
+from dbussy import \
+    DBUS
+import ravel
+
+my_socket_name = "unix:path=/tmp/direct_server_demo"
+my_interface_name = "com.example.direct_server"
+
+connection_timeout = 15 # seconds, short value for testing
+
+@ravel.interface(ravel.INTERFACE.SERVER, name = my_interface_name)
+class DirectConnectServer :
+
+    __slots__ = ("bus", "_last_request")
+
+    def __init__(self, bus) :
+        self.bus = bus
+        self._last_request = time.time()
+    #end __init__
+
+    @ravel.method \
+      (
+        name = "add",
+        in_signature = "ii",
+        out_signature = "i",
+        arg_keys = ["addend", "augend"],
+        result_keys = ["sum"],
+        result_keyword = "result",
+      )
+    def add(self, addend, augend, result) :
+        self._last_request = time.time()
+        result["sum"] = addend + augend
+    #end add
+
+#end DirectConnectServer
+
+loop = asyncio.get_event_loop()
+
+async def mainline() :
+    listen = ravel.Server(address = my_socket_name)
+    clients = []
+    last_conn = time.time()
+    while True :
+        now = time.time()
+        keep_clients = []
+        for client in clients :
+            if now - client.get_dispatch_interface("/", my_interface_name)._last_request > connection_timeout :
+                sys.stdout.write("closing idle client\n")
+                client.connection.close()
+            else :
+                keep_clients.append(client)
+            #end if
+        #end for
+        clients[:] = keep_clients
+        if len(clients) == 0 and now - last_conn > connection_timeout :
+            sys.stdout.write("no clients in a while, exiting\n")
+            listen.server.disconnect()
+            break
+        #end if
+        conn = await listen.await_new_connection(timeout = connection_timeout / 3)
+        if conn != None :
+            sys.stdout.write("new connection\n")
+            last_conn = time.time()
+            conn.register \
+              (
+                path = "/",
+                fallback = True,
+                interface = DirectConnectServer(conn)
+              )
+            clients.append(conn)
+        #end if
+    #end while
+#end mainline
+
+loop.run_until_complete(mainline())
