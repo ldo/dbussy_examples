@@ -30,7 +30,6 @@ class DirectConnectServer :
 
     def __init__(self, bus) :
         self.bus = bus
-        self._last_request = time.time()
     #end __init__
 
     @ravel.method \
@@ -43,7 +42,6 @@ class DirectConnectServer :
         result_keyword = "result",
       )
     def add(self, addend, augend, result) :
-        self._last_request = time.time()
         result["sum"] = addend + augend
     #end add
 
