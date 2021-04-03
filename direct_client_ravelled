@@ -19,27 +19,64 @@ import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
-    DBUS
+    DBUS, \
+    Introspection
 import ravel
 
 server_socket_name = "unix:path=/tmp/direct_server_demo"
 server_interface_name = "com.example.direct_server"
+ServerInterface = ravel.def_proxy_interface \
+  (
+    ravel.INTERFACE.CLIENT,
+    name = "ServerInterface",
+    introspected =
+        Introspection.Interface
+          (
+            name = server_interface_name,
+            methods =
+                [
+                    Introspection.Interface.Method
+                      (
+                        name = "add",
+                        args =
+                            [
+                                Introspection.Interface.Method.Arg
+                                  (
+                                    name = "addend",
+                                    type = dbus.BasicType(dbus.TYPE.INT32),
+                                    direction = Introspection.DIRECTION.IN
+                                  ),
+                                Introspection.Interface.Method.Arg
+                                  (
+                                    name = "augend",
+                                    type = dbus.BasicType(dbus.TYPE.INT32),
+                                    direction = Introspection.DIRECTION.IN
+                                  ),
+                                Introspection.Interface.Method.Arg
+                                  (
+                                    name = "sum",
+                                    type = dbus.BasicType(dbus.TYPE.INT32),
+                                    direction = Introspection.DIRECTION.OUT
+                                  ),
+                            ],
+                      ),
+                ],
+          ),
+    is_async = True
+  )
 
 loop = asyncio.get_event_loop()
 
 async def mainline(addend, augend) :
     conn = await ravel.connect_server_async(address = server_socket_name, private = True)
     sys.stdout.write("connected to server\n")
-    msg = dbus.Message.new_method_call \
+    intf = ServerInterface \
       (
-        destination = "com.example.dontcare", # no D-Bus daemon to care
-        path = "/",
-        iface = server_interface_name,
-        method = "add"
-      ) \
-      .append_objects("ii", addend, augend)
-    reply = await conn.connection.send_await_reply(msg)
-    sys.stdout.write("reply received: %s\n" % repr(reply.all_objects))
+        connection = conn.connection,
+        dest = "com.example.dontcare", # no D-Bus daemon to care
+      )["/"]
+    sum, = await intf.add(addend, augend)
+    sys.stdout.write("%d + %d = %d\n" % (addend, augend, sum))
     conn.connection.close()
 #end mainline
 
