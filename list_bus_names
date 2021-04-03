@@ -81,30 +81,30 @@ dbus_daemon = ravel.def_proxy_interface \
 
 async def mainline() :
     reply = await (dbus_daemon.ListNames, dbus_daemon.ListActivatableNames)[activatable]()
-    names = reply[0]
+    names, = reply
     for name in sorted(names) :
         if name.startswith(":") == unique :
             sys.stdout.write(name)
             if show_owners :
                 reply = await dbus_daemon.GetNameOwner(name)
-                owner = reply[0]
+                owner, = reply
                 sys.stdout.write(" -> %s" % owner)
             else :
                 owner = None
             #end if
             if show_pid :
                 reply = await dbus_daemon.GetConnectionUnixProcessID(name)
-                pid = reply[0]
+                pid, = reply
                 sys.stdout.write(" pid %d" % pid)
             #end if
             if show_user :
                 reply = await dbus_daemon.GetConnectionUnixUser(name)
-                user = reply[0]
+                user, = reply
                 sys.stdout.write(" user %s(%d)" % (pwd.getpwuid(user).pw_name, user))
             #end if
             if show_queued :
                 reply = await dbus_daemon.ListQueuedOwners(name)
-                queued = reply[0]
+                queued, = reply
                 sys.stdout.write(" <- [%s]" % ", ".join(repr(q) for q in queued if q != owner))
             #end if
             sys.stdout.write("\n")

@@ -74,7 +74,7 @@ for name in sorted(reply.expect_objects("as")[0]) :
                   )
                     .append_objects("s", name)
               )
-            owner = reply.all_objects[0]
+            owner, = reply.all_objects
             sys.stdout.write("%s -> %s\n" % (name, owner))
         else :
             sys.stdout.write(name + "\n")
