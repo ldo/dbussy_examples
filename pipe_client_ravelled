@@ -101,7 +101,7 @@ server = Server \
 
 async def mainline() :
     global message
-    pipe = (await server[path].get(writing = writing))[0]
+    pipe, = await server[path].get(writing = writing)
     if writing :
         os.write(pipe, message.encode())
     else :
