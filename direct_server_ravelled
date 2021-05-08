@@ -51,21 +51,23 @@ loop = asyncio.get_event_loop()
 
 async def mainline() :
     listen = ravel.Server(address = my_socket_name)
-    clients = []
+    clients = {}
+
+    @ravel.signal \
+      (
+        in_signature = "",
+        bus_keyword = "conn"
+      )
+    def connection_terminated(conn) :
+        # handler for signal sent by libdbus when client disconnects.
+        sys.stdout.write("connection from PID %s terminated\n" % conn.connection.unix_process_id)
+        del clients[id(conn)]
+    #end connection_terminated
+
+#begin mainline
     last_conn = time.time()
     while True :
-        now = time.time()
-        keep_clients = []
-        for client in clients :
-            if client.connection.is_connected :
-                keep_clients.append(client)
-            else :
-                sys.stdout.write("client %s closed\n" % client.connection.unix_process_id)
-                client.connection.close()
-            #end if
-        #end for
-        clients[:] = keep_clients
-        if len(clients) == 0 and now - last_conn > idle_timeout :
+        if len(clients) == 0 and time.time() - last_conn > idle_timeout :
             sys.stdout.write("no clients in a while, exiting\n")
             listen.server.disconnect()
             break
@@ -73,6 +75,8 @@ async def mainline() :
         conn = await listen.await_new_connection(timeout = idle_timeout / 3)
         if conn != None :
             sys.stdout.write("new connection from PID %s\n" % conn.connection.unix_process_id)
+              # unix_process_id always seems to be None at this point, but does
+              # get correct value at some point later.
             last_conn = time.time()
             conn.register \
               (
@@ -80,7 +84,15 @@ async def mainline() :
                 fallback = True,
                 interface = DirectConnectServer(conn)
               )
-            clients.append(conn)
+            conn.listen_signal \
+              (
+                path = "/",
+                fallback = True,
+                interface = DBUS.INTERFACE_LOCAL,
+                name = "Disconnected",
+                func = connection_terminated
+              )
+            clients[id(conn)] = conn
         #end if
     #end while
 #end mainline
