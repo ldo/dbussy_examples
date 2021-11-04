@@ -27,7 +27,6 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
@@ -36,8 +35,6 @@ from dbussy import \
 #+
 # Mainline
 #-
-
-loop = asyncio.get_event_loop()
 
 if len(sys.argv) != 5 :
     raise getopt.GetoptError("usage: %s session|system «bus-name» «path» «interface»" % sys.argv[0])
@@ -49,7 +46,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[which_bus.lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 
 request = dbus.Message.new_method_call \
   (
@@ -59,7 +56,7 @@ request = dbus.Message.new_method_call \
     method = "GetAll"
   )
 request.append_objects("s", dbus.valid_interface(interface_name))
-reply = loop.run_until_complete(conn.send_await_reply(request))
+reply = conn.loop.run_until_complete(conn.send_await_reply(request))
 values = reply.expect_return_objects("a{sv}")[0]
 for propname in sorted(values.keys()) :
     proptype, propvalue = values[propname]

@@ -12,7 +12,6 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
@@ -22,8 +21,6 @@ from dbussy import \
 #+
 # Mainline
 #-
-
-loop = asyncio.get_event_loop()
 
 if len(sys.argv) != 3 :
     raise getopt.GetoptError("usage: %s session|system «bus-name»" % sys.argv[0])
@@ -35,7 +32,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[which_bus.lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 
 request = dbus.Message.new_method_call \
   (
@@ -44,7 +41,7 @@ request = dbus.Message.new_method_call \
     iface = DBUSX.INTERFACE_OBJECT_MANAGER,
     method = "GetManagedObjects"
   )
-reply = loop.run_until_complete(conn.send_await_reply(request))
+reply = conn.loop.run_until_complete(conn.send_await_reply(request))
 objs = reply.expect_return_objects("a{oa{sa{sv}}}")[0]
 if len(objs) != 0 :
     for pathname in sorted(objs.keys()) :
