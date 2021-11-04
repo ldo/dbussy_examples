@@ -22,15 +22,12 @@
 #-
 
 import sys
-import asyncio
 import pwd
 import getopt
 import dbussy as dbus
 from dbussy import \
     DBUS
 import ravel
-
-loop = asyncio.get_event_loop()
 
 activatable = False
 show_owners = False
@@ -68,7 +65,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[args[0].lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 dbus_daemon = ravel.def_proxy_interface \
   (
     ravel.INTERFACE.CLIENT,
@@ -112,4 +109,4 @@ async def mainline() :
     #end for
 #end mainline
 
-loop.run_until_complete(mainline())
+conn.loop.run_until_complete(mainline())

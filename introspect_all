@@ -69,8 +69,6 @@ def get_terminal_window_size() :
 # Mainline
 #-
 
-loop = asyncio.get_event_loop()
-
 full_node_names = False
 list_interfaces = False
 want_interface = None
@@ -112,7 +110,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[which_bus.lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 
 interfaces_seen = set()
 if skip_standard :
@@ -201,16 +199,16 @@ else :
     line_length = None
 #end if
 if line_length != None :
-    progress_task = loop.create_task(show_progress())
+    progress_task = conn.loop.create_task(show_progress())
 else :
     progress_task = None
 #end if
-result = loop.run_until_complete(introspect_path([]))
+result = conn.loop.run_until_complete(introspect_path([]))
 result.name = "/"
 if progress_task != None :
     progress_task.cancel()
     try :
-        loop.run_until_complete(progress_task)
+        conn.loop.run_until_complete(progress_task)
     except asyncio.CancelledError :
         pass
     #end try

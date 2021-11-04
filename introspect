@@ -19,13 +19,10 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
     DBUS
-
-loop = asyncio.get_event_loop()
 
 if len(sys.argv) != 4 :
     raise getopt.GetoptError("usage: %s session|system «bus-name» «obj-path»" % sys.argv[0])
@@ -36,7 +33,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[sys.argv[1].lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 message = dbus.Message.new_method_call \
   (
     destination = dbus.valid_bus_name(sys.argv[2]),
@@ -45,5 +42,5 @@ message = dbus.Message.new_method_call \
     method = "Introspect"
   )
 await_reply = conn.send_await_reply(message)
-reply = loop.run_until_complete(await_reply)
+reply = conn.loop.run_until_complete(await_reply)
 sys.stdout.write(reply.expect_return_objects("s")[0])
