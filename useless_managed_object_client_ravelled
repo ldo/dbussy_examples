@@ -23,9 +23,8 @@ useless_managed_objects_bus_name = "com.example.useless_managed_objects"
 useless_managed_objects_iface_name = "com.example.useless_managed_objects"
 
 start_time = time.time()
-loop = asyncio.get_event_loop()
 bus = ravel.session_bus()
-bus.attach_asyncio(loop)
+bus.attach_asyncio()
 
 def event_time() :
     "time relative to the start of the script run."
@@ -103,7 +102,7 @@ bus.listen_objects_removed \
   (
     func = objects_removed
   )
-server = loop.run_until_complete \
+server = bus.loop.run_until_complete \
   (
     bus.get_proxy_interface_async
       (
@@ -180,16 +179,16 @@ async def actions() :
 #end actions
 
 try :
-    loop.run_until_complete(actions())
+    bus.loop.run_until_complete(actions())
 except KeyboardInterrupt :
     # is there an easier way of cleaning up than this?
     for task in \
-        (lambda : asyncio.Task.all_tasks(loop), lambda : asyncio.all_tasks(loop)) \
+        (lambda : asyncio.Task.all_tasks(bus.loop), lambda : asyncio.all_tasks(bus.loop)) \
             [hasattr(asyncio, "all_tasks")]() \
     :
         task.cancel()
         try :
-            loop.run_until_complete(task)
+            bus.loop.run_until_complete(task)
         except asyncio.CancelledError :
             pass
         #end try

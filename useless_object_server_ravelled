@@ -22,9 +22,8 @@ import ravel
 useless_objects_bus_name = "com.example.useless_objects"
 useless_objects_iface_name = "com.example.useless_objects"
 
-loop = asyncio.get_event_loop()
 bus = ravel.session_bus()
-bus.attach_asyncio(loop)
+bus.attach_asyncio()
 
 #+
 # Custom object info
@@ -247,16 +246,16 @@ bus.register \
     interface = UselessObjectServer(bus)
   )
 try :
-    loop.run_forever()
+    bus.loop.run_forever()
 except KeyboardInterrupt :
     # is there an easier way of cleaning up than this?
     for task in \
-        (lambda : asyncio.Task.all_tasks(loop), lambda : asyncio.all_tasks(loop)) \
+        (lambda : asyncio.Task.all_tasks(bus.loop), lambda : asyncio.all_tasks(bus.loop)) \
             [hasattr(asyncio, "all_tasks")]() \
     :
         task.cancel()
         try :
-            loop.run_until_complete(task)
+            bus.loop.run_until_complete(task)
         except asyncio.CancelledError :
             pass
         #end try

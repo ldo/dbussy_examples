@@ -34,7 +34,13 @@ from dbussy import \
     DBUS
 import ravel
 
-loop = asyncio.get_event_loop()
+if hasattr(asyncio, "run") :
+    # Python ≥ 3.7
+    asyncio_run = asyncio.run
+else :
+    # Python < 3.7
+    asyncio_run = asyncio.get_event_loop().run_until_complete
+#end if
 
 #+
 # Interface definition
@@ -153,4 +159,4 @@ async def mainline() :
           )
 #end mainline
 
-loop.run_until_complete(mainline())
+asyncio_run(mainline())
