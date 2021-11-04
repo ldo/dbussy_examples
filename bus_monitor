@@ -11,13 +11,10 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
     DBUS
-
-loop = asyncio.get_event_loop()
 
 #+
 # Mainline
@@ -49,7 +46,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[args[0].lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 conn.add_filter(handle_message, None)
 conn.become_monitor(args[1:])
-loop.run_forever()
+conn.loop.run_forever()

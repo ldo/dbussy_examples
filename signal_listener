@@ -9,13 +9,10 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
     DBUS
-
-loop = asyncio.get_event_loop()
 
 #+
 # Callbacks
@@ -53,7 +50,7 @@ conn = dbus.Connection.bus_get \
     {"session" : DBUS.BUS_SESSION, "system" : DBUS.BUS_SYSTEM}[bus_spec.lower()],
     private = False
   )
-conn.attach_asyncio(loop)
+conn.attach_asyncio()
 conn.add_filter(message_filter, None)
 conn.bus_add_match("type=signal")
-loop.run_forever()
+conn.loop.run_forever()

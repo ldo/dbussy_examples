@@ -16,7 +16,6 @@
 
 import sys
 import os
-import asyncio
 import dbussy as dbus
 from dbussy import \
     DBUS
@@ -24,8 +23,6 @@ import ravel
 
 my_bus_name = "com.example.pipes"
 my_iface_name = "com.example.pipes"
-
-loop = asyncio.get_event_loop()
 
 #+
 # Interface
@@ -58,7 +55,7 @@ class PipeServer :
 #end PipeServer
 
 bus = ravel.session_bus()
-bus.attach_asyncio(loop)
+bus.attach_asyncio()
 bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
 bus.register \
   (
@@ -66,4 +63,4 @@ bus.register \
     fallback = True,
     interface = PipeServer()
   )
-loop.run_forever()
+bus.loop.run_forever()
