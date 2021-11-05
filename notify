@@ -40,6 +40,7 @@ if hasattr(asyncio, "run") :
 else :
     # Python < 3.7
     asyncio_run = asyncio.get_event_loop().run_until_complete
+      # not exactly equivalent to asyncio.run(), but close enough
 #end if
 
 #+
