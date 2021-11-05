@@ -25,8 +25,6 @@ my_bus_name = "com.example.callback_server"
 my_path_name = "/"
 my_iface_name = "com.example.callback_server"
 
-loop = asyncio.get_event_loop()
-
 #+
 # Interface
 #-
@@ -90,7 +88,7 @@ class CallbackServer :
 #-
 
 bus = ravel.session_bus()
-bus.attach_asyncio(loop)
+bus.attach_asyncio()
 bus.request_name(bus_name = my_bus_name, flags = DBUS.NAME_FLAG_DO_NOT_QUEUE)
 bus.register \
   (
@@ -100,16 +98,16 @@ bus.register \
   )
 
 try :
-    loop.run_forever()
+    bus.loop.run_forever()
 except KeyboardInterrupt :
     # is there an easier way of cleaning up than this?
     for task in \
-        (lambda : asyncio.Task.all_tasks(loop), lambda : asyncio.all_tasks(loop)) \
+        (lambda : asyncio.Task.all_tasks(bus.loop), lambda : asyncio.all_tasks(bus.loop)) \
             [hasattr(asyncio, "all_tasks")]() \
     :
         task.cancel()
         try :
-            loop.run_until_complete(task)
+            bus.loop.run_until_complete(task)
         except asyncio.CancelledError :
             pass
         #end try
