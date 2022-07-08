@@ -36,7 +36,7 @@
 #-
 
 import sys
-import asyncio
+import dbussy
 import getopt
 import ravel
 
@@ -50,7 +50,7 @@ mixcontrol_iface = "org.kde.KMix.Control"
 # Mainline
 #-
 
-loop = asyncio.get_event_loop()
+loop = dbussy.get_event_loop()
 
 verbose = False
 new_vol = None

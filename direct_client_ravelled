@@ -15,7 +15,6 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
@@ -65,7 +64,7 @@ ServerInterface = ravel.def_proxy_interface \
     is_async = True
   )
 
-loop = asyncio.get_event_loop()
+loop = dbus.get_event_loop()
 
 async def mainline(addend, augend) :
     conn = await ravel.connect_server_async(address = server_socket_name, private = True)

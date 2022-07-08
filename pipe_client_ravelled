@@ -26,8 +26,8 @@
 
 import sys
 import os
-import asyncio
 import getopt
+import dbussy as dbus
 from dbussy import \
     DBUS, \
     Introspection
@@ -36,7 +36,7 @@ import ravel
 my_bus_name = "com.example.pipes"
 my_iface_name = "com.example.pipes"
 
-loop = asyncio.get_event_loop()
+loop = dbus.get_event_loop()
 
 #+
 # Server proxy interface

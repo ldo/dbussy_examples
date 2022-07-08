@@ -8,7 +8,6 @@
 # what you will.
 #-
 
-import asyncio
 import dbussy as dbus
 from dbussy import \
     DBUS
@@ -17,7 +16,7 @@ my_bus_name = "com.example.bigben"
 my_path_name = "/com/example/bigben"
 my_iface_name = "com.example.bigben"
 
-loop = asyncio.get_event_loop()
+loop = dbus.get_event_loop()
 
 #+
 # Mainline

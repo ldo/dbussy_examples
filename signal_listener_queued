@@ -10,13 +10,12 @@
 #-
 
 import sys
-import asyncio
 import getopt
 import dbussy as dbus
 from dbussy import \
     DBUS
 
-loop = asyncio.get_event_loop()
+loop = dbus.get_event_loop()
 
 if len(sys.argv) != 2 :
     raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])

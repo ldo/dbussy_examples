@@ -17,13 +17,14 @@
 import random
 import statistics
 import asyncio
+import dbussy
 import ravel
 
 stats_bus_name = "com.example.stats"
 stats_path_name = "/com/example/stats"
 stats_iface_name = "com.example.stats"
 
-loop = asyncio.get_event_loop()
+loop = dbussy.get_event_loop()
 bus = ravel.session_bus()
 bus.attach_asyncio(loop)
 

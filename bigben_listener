@@ -10,7 +10,6 @@
 #-
 
 import sys
-import asyncio
 import dbussy as dbus
 from dbussy import \
     DBUS
@@ -20,7 +19,7 @@ my_path_name = "/com/example/bigben"
 my_iface_name = "com.example.bigben"
 chime_signal_name = "chime"
 
-loop = asyncio.get_event_loop()
+loop = dbus.get_event_loop()
 
 def handle_message(conn, message, user_data) :
     sys.stdout.write(" ".join(message.expect_objects("as")[0]) + "\n")

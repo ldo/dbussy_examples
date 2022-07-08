@@ -12,7 +12,6 @@
 
 import sys
 import time
-import asyncio
 import dbussy as dbus
 from dbussy import \
     DBUS
@@ -47,7 +46,7 @@ class DirectConnectServer :
 
 #end DirectConnectServer
 
-loop = asyncio.get_event_loop()
+loop = dbus.get_event_loop()
 
 async def mainline() :
     listen = ravel.Server(address = my_socket_name)
