@@ -59,4 +59,3 @@ if len(objs) != 0 :
 else :
     sys.stdout.write("(nothing)\n")
 #end if
-

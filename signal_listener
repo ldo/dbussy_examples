@@ -9,6 +9,7 @@
 #-
 
 import sys
+import signal
 import getopt
 import dbussy as dbus
 from dbussy import \
@@ -39,6 +40,8 @@ def message_filter(connection, message, data) :
 #+
 # Mainline
 #-
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 if len(sys.argv) != 2 :
     raise getopt.GetoptError("usage: %s session|system" % sys.argv[0])

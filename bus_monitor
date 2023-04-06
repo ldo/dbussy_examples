@@ -11,6 +11,7 @@
 #-
 
 import sys
+import signal
 import getopt
 import dbussy as dbus
 from dbussy import \
@@ -19,6 +20,8 @@ from dbussy import \
 #+
 # Mainline
 #-
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 def handle_message(conn, message, _) :
     sys.stdout.write \

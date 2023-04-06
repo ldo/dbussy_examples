@@ -14,6 +14,7 @@
 # what you will.
 #-
 
+import signal
 import random
 import statistics
 import asyncio
@@ -27,6 +28,8 @@ stats_iface_name = "com.example.stats"
 loop = dbussy.get_event_loop()
 bus = ravel.session_bus()
 bus.attach_asyncio(loop)
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 #+
 # Interface
@@ -140,21 +143,4 @@ bus.register \
     fallback = True,
     interface = Stats()
   )
-try :
-    loop.run_forever()
-except KeyboardInterrupt :
-    # is there an easier way of cleaning up than this?
-    for task in \
-        (lambda : asyncio.Task.all_tasks(loop), lambda : asyncio.all_tasks(loop)) \
-            [hasattr(asyncio, "all_tasks")]() \
-    :
-        task.cancel()
-        try :
-            loop.run_until_complete(task)
-        except asyncio.CancelledError :
-            pass
-        #end try
-    #end for
-    print() # avoid terminal prompt appearing after ^C
-#end try
-bus = None
+loop.run_forever()

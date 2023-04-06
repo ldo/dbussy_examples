@@ -8,6 +8,7 @@
 # what you will.
 #-
 
+import signal
 import dbussy as dbus
 from dbussy import \
     DBUS
@@ -17,6 +18,8 @@ my_path_name = "/com/example/bigben"
 my_iface_name = "com.example.bigben"
 
 loop = dbus.get_event_loop()
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 #+
 # Mainline

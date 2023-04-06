@@ -15,6 +15,7 @@
 #-
 
 import sys
+import signal
 import getopt
 import dbussy as dbus
 from dbussy import \
@@ -65,6 +66,8 @@ ServerInterface = ravel.def_proxy_interface \
   )
 
 loop = dbus.get_event_loop()
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 async def mainline(addend, augend) :
     conn = await ravel.connect_server_async(address = server_socket_name, private = True)

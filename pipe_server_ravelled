@@ -16,6 +16,7 @@
 
 import sys
 import os
+import signal
 import dbussy as dbus
 from dbussy import \
     DBUS
@@ -53,6 +54,8 @@ class PipeServer :
     #end handle_get
 
 #end PipeServer
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 bus = ravel.session_bus()
 bus.attach_asyncio()

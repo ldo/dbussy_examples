@@ -15,6 +15,7 @@
 #-
 
 import math
+import signal
 import time
 import asyncio
 import dbussy as dbus
@@ -28,6 +29,8 @@ my_iface_name = "com.example.bigben"
 chime_signal_name = "chime"
 
 loop = dbus.get_event_loop()
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 #+
 # Time task
@@ -156,21 +159,4 @@ bus.register \
   )
 main_task = loop.create_task(chimer())
   # need to keep a reference
-try :
-    loop.run_forever()
-except KeyboardInterrupt :
-    # is there an easier way of cleaning up than this?
-    for task in \
-        (lambda : asyncio.Task.all_tasks(loop), lambda : asyncio.all_tasks(loop)) \
-            [hasattr(asyncio, "all_tasks")]() \
-    :
-        task.cancel()
-        try :
-            loop.run_until_complete(task)
-        except asyncio.CancelledError :
-            pass
-        #end try
-    #end for
-    print() # avoid terminal prompt appearing after ^C
-#end try
-bus = None
+loop.run_forever()

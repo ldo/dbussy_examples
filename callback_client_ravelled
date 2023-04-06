@@ -15,6 +15,7 @@
 
 import sys
 import os
+import signal
 import asyncio
 import dbussy as dbus
 from dbussy import \
@@ -60,6 +61,8 @@ class CallbackHandler :
 # Mainline
 #-
 
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
+
 use_obj_path = os.getenv("OBJ_PATH", "/")
 use_iface_name = os.getenv("IFACE_NAME", my_iface_name)
 use_method_name = os.getenv("METHOD_NAME", my_method_name)
@@ -99,21 +102,4 @@ async def mainline() :
     #end if
 #end mainline
 
-try :
-    bus.loop.run_until_complete(mainline())
-except KeyboardInterrupt :
-    # is there an easier way of cleaning up than this?
-    for task in \
-        (lambda : asyncio.Task.all_tasks(bus.loop), lambda : asyncio.all_tasks(bus.loop)) \
-            [hasattr(asyncio, "all_tasks")]() \
-    :
-        task.cancel()
-        try :
-            bus.loop.run_until_complete(task)
-        except asyncio.CancelledError :
-            pass
-        #end try
-    #end for
-    print() # avoid terminal prompt appearing after ^C
-#end try
-bus = None
+bus.loop.run_until_complete(mainline())

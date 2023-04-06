@@ -11,6 +11,7 @@
 #-
 
 import sys
+import signal
 import time
 import dbussy as dbus
 from dbussy import \
@@ -47,6 +48,8 @@ class DirectConnectServer :
 #end DirectConnectServer
 
 loop = dbus.get_event_loop()
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 async def mainline() :
     listen = ravel.Server(address = my_socket_name)

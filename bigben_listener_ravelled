@@ -12,6 +12,7 @@
 #-
 
 import sys
+import signal
 import dbussy
 from dbussy import \
     DBUS
@@ -23,6 +24,8 @@ my_iface_name = "com.example.bigben"
 chime_signal_name = "chime"
 
 loop = dbussy.get_event_loop()
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 @ravel.signal(name = "chime", in_signature = "as", args_keyword = "args")
 def chime_received(args) :

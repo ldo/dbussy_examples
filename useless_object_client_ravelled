@@ -13,6 +13,7 @@
 
 import sys
 import time
+import signal
 import asyncio
 import dbussy as dbus
 from dbussy import \
@@ -25,6 +26,8 @@ useless_objects_iface_name = "com.example.useless_objects"
 start_time = time.time()
 bus = ravel.session_bus()
 bus.attach_asyncio()
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 def event_time() :
     "time relative to the start of the script run."
@@ -180,20 +183,4 @@ async def actions() :
     log_msg("finishing script")
 #end actions
 
-try :
-    bus.loop.run_until_complete(actions())
-except KeyboardInterrupt :
-    # is there an easier way of cleaning up than this?
-    for task in \
-        (lambda : asyncio.Task.all_tasks(bus.loop), lambda : asyncio.all_tasks(bus.loop)) \
-            [hasattr(asyncio, "all_tasks")]() \
-    :
-        task.cancel()
-        try :
-            bus.loop.run_until_complete(task)
-        except asyncio.CancelledError :
-            pass
-        #end try
-    #end for
-    print() # avoid terminal prompt appearing after ^C
-#end try
+bus.loop.run_until_complete(actions())

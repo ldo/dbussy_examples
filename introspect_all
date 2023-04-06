@@ -28,6 +28,7 @@
 import sys
 import os
 import ctypes as ct
+import signal
 import fcntl
 import termios
 import asyncio
@@ -68,6 +69,8 @@ def get_terminal_window_size() :
 #+
 # Mainline
 #-
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # abort without raising KeyboardInterrupt on CTRL/C
 
 full_node_names = False
 list_interfaces = False
