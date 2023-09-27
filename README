@@ -1,7 +1,4 @@
-Here are some examples of the use of my DBussy (GitLab:
-<https://gitlab.com/ldo/dbussy>, BitBucket:
-<https://bitbucket.org/ldo17/dbussy>) Python binding for libdbus
-<https://www.freedesktop.org/wiki/Software/dbus/>.
-
-Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2023 September 27
+This project is no longer being maintained on GitHub.
+Look for it at one of
+* gitlab: https://gitlab.com/ldo/dbussy_examples
+* bitbucket: https://bitbucket.org/ldo17/dbussy_examples
